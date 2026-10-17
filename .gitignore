@@ -11,3 +11,4 @@ fm1-recovery-backups/
 web/manual/*.png
 !/AGENTS.md
 renders/
+.venv-tools/

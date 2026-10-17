@@ -28,6 +28,25 @@ fi
 FLAGS="-O2 -ffp-contract=off -w -Ibuild/gen -Ifirmware/src"
 EXPORTS='["_dock_init","_dock_midi","_dock_render","_dock_left","_dock_right","_dock_voices","_dock_rate"]'
 
+if [ "$1" = web ]; then                     # the panel emulator: build/emu/panel/ (serve the repo, open that)
+    [ -f build/gen/ui_fonts.h ] || {
+        # the UI headers need Pillow with Raqm (fribidi) and fontTools: .venv-tools (see emu/README.md)
+        P=.venv-tools/bin/python
+        export DYLD_FALLBACK_LIBRARY_PATH="$PWD/.venv-tools/fribidi/lib"
+        $P tools/gen_aa_font.py build/gen/ui_fonts.h --preset rubik
+        $P tools/gen_icons.py build/gen/ui_icons.h
+        $P tools/gen_aa_keycaps.py build/gen/ui_keycaps.h
+        $P tools/gen_ui_palettes.py build/gen/ui_palettes.h
+    }
+    mkdir -p "$OUT/panel/fonts"
+    emcc $FLAGS -std=gnu99 -DMELODEE_USB_AUDIO=1 --no-entry -sSTANDALONE_WASM=1 -sSTACK_SIZE=1048576 \
+        -sINITIAL_MEMORY=33554432 -o "$OUT/panel/dock_web.wasm" emu/dock_web.c
+    cp emu/panel/index.html emu/panel/worklet.js "$OUT/panel/"
+    cp emu/panel/fonts/* "$OUT/panel/fonts/"
+    echo "emu: $OUT/panel ($(wc -c < "$OUT/panel/dock_web.wasm" | tr -d ' ') B wasm)"
+    exit 0
+fi
+
 if [ "$1" = test ]; then
     cc $FLAGS -DDOCK_SELFTEST -o "$OUT/selftest" emu/dock_wasm.c -lm
     "$OUT/selftest" "$OUT/native.f32"
