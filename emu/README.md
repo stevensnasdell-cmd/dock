@@ -24,6 +24,9 @@ Open <http://localhost:8000/build/emu/panel/> in Chrome, press **Switch on**. We
 - Emscripten in `~/emsdk`; its Python must be 3.10+ (`EMSDK_PYTHON`, a uv-installed 3.12; `build.sh` finds it).
 - The screen's fonts need Pillow with Raqm and fontTools: `.venv-tools` (uv venv, `pip install Pillow fonttools`) and
   conda-forge's `libfribidi` unpacked in `.venv-tools/fribidi/lib`. Only needed once, to make `build/gen/ui_*.h`.
+- The EP's Rhodes tables (`build/gen/rhodes_tables.h`, `tools/gen_rhodes.py`) need numpy and scipy in the same
+  `.venv-tools` (`uv pip install --python .venv-tools/bin/python numpy scipy`). The physics takes ~30 s; `build.sh`
+  skips it while the generator's inputs are unchanged.
 
 ## Not yet
 

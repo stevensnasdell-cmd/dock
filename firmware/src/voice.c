@@ -747,11 +747,12 @@ static int32_t *spread_buf=spread_storage;
 static int trk_stereo(const track_t *t)
 {
     if (ENGINES[t->engine] == &ENG_JUNO && juno_stereo(t)) return 1;
+    if (ENGINES[t->engine] == &ENG_EP) return ep_stereo(t);   /* (its post filters the sum: SPREAD stays mono) */
     return t->p[P_SPRD] > 0 && (trk_vmode(t) == V_POLY || trk_vmode(t) == V_UNISON);
 }
 static int32_t trk_width(const track_t *t)
 {
-    return ENGINES[t->engine] == &ENG_JUNO && juno_stereo(t) ? 64 : (t->p[P_SPRD] + 1) >> 1;
+    return (ENGINES[t->engine] == &ENG_JUNO && juno_stereo(t)) || ENGINES[t->engine] == &ENG_EP ? 64 : (t->p[P_SPRD] + 1) >> 1;
 }
 static __attribute__((noinline)) void spread_clear(void)
 {

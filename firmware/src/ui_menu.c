@@ -58,6 +58,10 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"H\xFCgelton Instruments, Leo Kuroshita / GPL-3.0", MC_TEXT},
     {"https://github.com/hugelton/Felucca", MC_URL},
     {"", MC_TEXT},
+    {"FRODHES / EP ENGINE", MC_TITLE},                 /* Dock: eng_ep.c, tools/gen_rhodes.py, tools/rhodes/ */
+    {"Leonardo Mirabal / GPL-3.0", MC_TEXT},
+    {"https://github.com/leonardoMirabal/frodhes", MC_URL},
+    {"", MC_TEXT},
     {"H\xFCgelton Instruments / OWN WORK", MC_TITLE},
     {"Leo Kuroshita", MC_TEXT},
     {"CrispyZebra (PHASE waveforms): GPL-3.0", MC_TEXT},

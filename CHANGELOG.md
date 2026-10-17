@@ -6,6 +6,45 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 ## Unreleased
 
 ### Engines
+- **EP** (`firmware/src/eng_ep.c`), Dock's electric piano: the physically modelled Rhodes of
+  [FRodhes](https://github.com/leonardoMirabal/frodhes) by Leonardo Mirabal (GPL-3.0), ported as a Melodee engine.
+  Per voice a hammer force pulse (from a contact simulation) strikes the tine's modes (the tine-bar pair, two
+  overtones; exact-pole fixed-point resonators); the tip swings across an electromagnetic pickup (its flux curve is
+  the bark, growing with velocity); key-up brings the damper and a soft felt knock. The part then passes the pickup's
+  RLC load and the TYPE's amp / speaker.
+- EDIT 1 "TINE": TONE (pickup offset), BARK, BELL (overtones), HAMR (hammer hardness). EDIT 2 "BODY": DECAY, RELEASE,
+  TYPE (STAGE, SUITCASE, FELT, DYNO and Dock's **WURLY**), TREM. HOME's knobs: TONE, BARK, DECAY, TREM (DOCK.md §6);
+  CC 74 / 71 turn TONE / BARK. TREM is the part's LFO: a Suitcase's stereo vibrato on every TYPE but WURLY, whose
+  tremolo is mono. WURLY is a Wurlitzer-ish voicing of the same tine model (off-axis pickup, hard hammer, strong
+  overtones, a nasal load and amp, a symmetric odd-harmonic clip): not a reed / electrostatic-pickup model.
+- Sounds: INIT EP, **SUITCASE** (now Yacht's Keys and the Keys at power-on, in place of FM6 TINE EP), STAGE 77,
+  EARLY FELT, BELL DYNO, **WURLY** (now Hot's Keys, in place of PROPHET Vintage Wurly), BARK STAGE, BALLAD CASE.
+- Voices live in Melodee's allocator (voices by member, shares and `DOCK_ENGINE_OK` apply: EP plays on Bass, Keys and
+  Lead). The engine owns the amplitude (as FM6): velocity is the hammer's, the ADSR does nothing, a voice ends when
+  its modes die away. The same key re-strikes its ringing tine; a steal or a legato move (mono Bass / Lead) fades the
+  old note over 64 samples first. Bend, TUNE, A4, glide and vibrato retune the modes (up to about ±4 semitones). The
+  sustain pedal is Melodee's (no half-pedal). FRodhes' DRIVE and effects are not in the engine (the rooms come with
+  the effects, step 8).
+- EP takes stored engine ID 8 (Melodee's GRAIN, retired): its favourites use bytes 0–1 of row 8, below the FX key map.
+- Tables: `tools/gen_rhodes.py` (FRodhes' generator, with its physics in `tools/rhodes/`) writes
+  `build/gen/rhodes_tables.h`; `tools/build.py` and `emu/build.sh` run it (numpy + scipy; ~20 s, skipped while its
+  inputs are unchanged). Newer numpy / scipy can move the last bit of a few coefficients against FRodhes' own header.
+- Cost, host only (`tests/ep_test.c`): an EP voice is about 0.45 of a PROPHET voice and 0.7 of a JUNO voice, so it
+  charges 2 voice units, as JUNO. Its kernel is 64-bit integer multiplies, dearer on the FM-1's 32-bit core than on a
+  computer: the device figure needs the JieLi toolchain (Phase 2). State: 3.3 KB of RAM per EP part.
+- Flash: the tables are 147,348 B (143.9 KiB) in the native object: hammer pulses 90.8 KiB (88 keys × 8 velocity
+  layers × 66 int16), pickup flux and slope 32 KiB, keys 14.4 KiB, rates 5.2 KiB. That is a quarter of the app body
+  (560 KiB, `BODY_MAX`); how much Melodee already uses needs a device build (Phase 2). If it does not fit: FM6, CZ-1
+  and SID carry only a few KiB of tables each (cutting them frees mostly code); the EP itself could halve its pulses
+  (4 layers, or 8-bit), keep 73 keys (E1..E7, about -18 KiB) or a 512-point pickup table (-24 KiB): each changes the
+  sound and wants a listen.
+- `tests/ep_test.c` (in `tests/dock_tests.sh`): Suitcase on the Keys at power-on; EP selectable on Bass, Keys, Lead,
+  not on the drummer; every sound plays six notes at 100 and 127 bounded and unclipped; the bark (H2 + H3 against H1)
+  grows with velocity (A3: H2/H1 -29 dB at 30, -7 dB at 127) and with BARK; key-up is 36 dB down 0.2 s later and the
+  voice ends; A4 at 440 Hz and a +2 bend at 494 Hz; Suitcase's TREM stereo, WURLY's mono; 24 fast notes on 8 voices
+  stay clean; the mono Lead re-strikes a slide. Optional WAVs: `build/host/ep_test build/ep`.
+- Credits: README "Built on", LICENSING.md, the device's credits page, `tools/rhodes/README.md`.
+- Melodee's checks that engine 8 is retired (`tests/ui_test.c`, `tests/pattern_test.c`) now check it is EP.
 - **JUNO** (`firmware/src/eng_juno.c`), a Juno-60-style voice: one DCO (polyBLEP saw, pulse with PWM, sub square an
   octave down, noise, a level each) -> the Juno-60's fixed high pass (off, 154, 339, 720 Hz) -> a 4-pole resonant
   low pass (zero-delay-feedback ladder, soft-saturating) -> VCA, the ADSR shared by both (VCA GATE: HPF "0 GT".."3 GT").

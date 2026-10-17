@@ -401,7 +401,7 @@ static int test_sound_loads(void)
     project_load(1);
     bad += check("a project load drops the copy and takes none", undo.trk == 0 && undo_depth == 0);
     ui_power_on();
-    bad += check("sample engines retired with reserved IDs (Dock: 14 is JUNO)",!eng_ok(4) && !eng_ok(8) && !eng_ok(13) && eng_ok(ENGI_JUNO));
+    bad += check("sample engines retired with reserved IDs (Dock: 14 is JUNO, 8 EP)",!eng_ok(4) && eng_ok(ENGI_EP) && !eng_ok(13) && eng_ok(ENGI_JUNO));
     host_808_kit(t);
     t->preset = 0;                             /* a project written before the factory removal */
     my_steps(t);

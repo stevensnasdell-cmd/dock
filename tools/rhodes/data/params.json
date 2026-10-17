@@ -1,0 +1,311 @@
+{
+ "_comment": "Physical parameters for tools/gen_rhodes.py. ALL VALUES ARE PRIORS (ESTIMATE) until the reference fit (IMPLEMENTATION-v3 \u00a77) replaces them.",
+ "version": 1,
+ "spring_pos": 0.65,
+ "t60_v1": {
+  "_doc": "sustain T60 of V1 (s) at MIDI keys, log-interpolated; flat below the first point, halving every 10 keys above the last (floor). Source: Shear 2011 tine Q (1974 Mark I), T60 = 6.908 Q/(pi f0) (research/09)",
+  "points": [
+   [
+    39,
+    26.8
+   ],
+   [
+    51,
+    10.3
+   ],
+   [
+    63,
+    10.7
+   ],
+   [
+    75,
+    7.7
+   ],
+   [
+    87,
+    3.1
+   ]
+  ],
+  "halve_keys": 10.0,
+  "floor_s": 0.8
+ },
+ "tinebar": {
+  "_doc": "bar_cents_points: [midi, cents of the bar's own f0 relative to the tine] (Muenster & Pfeifle ISMA 2014 Table 1, research/09); k_rel coupling rel. to w_t^2 (ESTIMATE); mu bar/tine mass (ESTIMATE); tine T60 = target; bar T60 multiple (ESTIMATE)",
+  "bar_cents_points": [
+   [
+    39,
+    -757.6
+   ],
+   [
+    46,
+    -928.9
+   ],
+   [
+    53,
+    -1386.8
+   ],
+   [
+    60,
+    -1589.6
+   ],
+   [
+    67,
+    -1811.8
+   ],
+   [
+    74,
+    -2020.8
+   ],
+   [
+    81,
+    -3182.5
+   ],
+   [
+    88,
+    -3818.4
+   ],
+   [
+    95,
+    -3778.6
+   ]
+  ],
+  "k_rel": 0.02,
+  "mu": 3.0,
+  "tine_t60_frac": 1.0,
+  "bar_t60_mult": 2.0
+ },
+ "release_t60": {
+  "_doc": "damper-on T60 (s) by MIDI upper bound (soft targets, jRhodes sfz)",
+  "33": 0.5,
+  "60": 0.4,
+  "83": 0.3,
+  "108": 0.2
+ },
+ "overtone_damping_exp": 2.0,
+ "strike": {
+  "_doc": "strike point from the clamp (m) at key 21 and key 108, linear in key (R05 W1)",
+  "lo_m": 0.05715,
+  "hi_m": 0.003175
+ },
+ "bands": {
+  "_doc": "hammer tip bands: first MIDI key of each band (A0 = position 1 of R05 W1)",
+  "first_key": [
+   21,
+   51,
+   61,
+   71,
+   85
+  ],
+  "names": [
+   "30 duro",
+   "50 duro",
+   "70 duro",
+   "90 duro",
+   "wood"
+  ],
+  "shore": [
+   30,
+   50,
+   70,
+   90,
+   null
+  ],
+  "tip_in": [
+   0.25,
+   0.3125,
+   0.375,
+   0.4375,
+   0.4375
+  ],
+  "_doc_tip": "hammer tips per band (Rhodes service manual ch. 4, R05 W1/W2): Shore A durometer of the neoprene (null = maple wrapped in shrink tube) and tip size (inch). The Hertz contact stiffness follows from them (gen_rhodes.band_K)."
+ },
+ "hammer": {
+  "mass_kg": 0.011,
+  "p": 1.5,
+  "v_max": 4.0,
+  "range_db": 30.0,
+  "alpha": 0.2,
+  "E_wrap": 3000000000.0,
+  "_doc": "Hammer = a rigid mass at the tip on a Hertz rubber tip, F = K e^1.5 (1 + alpha de/dt) (Hunt-Crossley), against the tine's first 6 FE modes. Effective mass = min(mass_kg, m_tine1 / m_eff_ratio) (gen_rhodes.hammer_mass): 11 g (R02 Tab. 3.2) in the bass, where the contact then lasts ~5.7 ms at v = 100 (Muenster & Pfeifle 2014 measured 6.42 ms on average), down to ~0.5 g in the treble, where a heavier hammer followed the tine and re-struck it 2..12 times (the FM-1 scan's 23 dB holes). alpha: neoprene loss (s/m, ESTIMATE). E_wrap: the wood band's wrapped-maple face (Pa, ESTIMATE). v_max, range_db: hammer speed at v = 127 and its range (dB) down to v = 1.",
+  "m_eff_ratio": 3.0
+ },
+ "tip_peak_gap_v127": {
+  "_doc": "V1 tip peak (gap units) at v = 127: bass .. treble",
+  "lo": 1.0,
+  "hi": 0.5
+ },
+ "pickup": {
+  "_doc": "pole radius / gap per family (R03 code geometry: R = 1 gap); family 0 = 1/16 inch gap, family 1 = 1/32 inch gap. R = 2 gave a non-monotonic velocity response (2026-10-15 test), so both start at 1.0 until the fit.",
+  "R": [
+   1.0,
+   1.0
+  ],
+  "family0_keys": [
+   [
+    21,
+    32
+   ],
+   [
+    96,
+    108
+   ]
+  ],
+  "off_gap": -0.3
+ },
+ "gain_target_dbfs": -26.0,
+ "rlc": {
+  "_doc": "moved into types[*].rlc"
+ },
+ "types": {
+  "_doc": "Physical voicing per TYPE, relative to the STAGE 77 priors. off: pickup offset change in gap units (+ = toward the pole axis: H2 up, fundamental down, 'bell'; - = off-axis: round, mellow; W6). bark: tip displacement / gap scale (pickup distance: closer = more bark and output, W3); the gain is compensated by 1/bark. ham: hammer contact-rate scale (felt tips 1970-71 are softer: longer contact, fewer high partials; W2/W9). bell: tine overtone (O1/O2) force scale. rlc: pickup inductance x cable/input capacitance resonance [f_hz, q]. body: up to 2 biquads after the load: [kind, f_hz, q, gain_db], kinds hp2 / peak / lshelf / hshelf; the amp and speaker of the instrument (Suitcase: Peterson preamp into four 12-inch speakers, W5/W6; Dyno-My-Piano: active treble-boost preamp). level_db: output trim so the types play at matched loudness (measured A3 v100 + A4 v70, host).",
+  "STAGE77": {
+   "off": 0.0,
+   "bark": 1.0,
+   "ham": 1.0,
+   "bell": 1.0,
+   "rlc": [
+    5000.0,
+    1.0
+   ],
+   "body": [],
+   "drive_row": 0,
+   "level_db": 0.0
+  },
+  "SUITCASE": {
+   "off": -0.05,
+   "bark": 1.35,
+   "ham": 1.0,
+   "bell": 0.9,
+   "rlc": [
+    4500.0,
+    1.3
+   ],
+   "body": [
+    [
+     "hp2",
+     50.0,
+     0.7,
+     0.0
+    ],
+    [
+     "peak",
+     250.0,
+     0.7,
+     3.5
+    ]
+   ],
+   "drive_row": 1,
+   "level_db": -3.5
+  },
+  "FELT": {
+   "off": -0.2,
+   "bark": 0.75,
+   "ham": 0.7,
+   "bell": 0.45,
+   "rlc": [
+    3200.0,
+    0.8
+   ],
+   "body": [
+    [
+     "peak",
+     300.0,
+     0.8,
+     1.5
+    ]
+   ],
+   "drive_row": 2,
+   "level_db": -5.0
+  },
+  "DYNO": {
+   "off": 0.1,
+   "bark": 1.1,
+   "ham": 1.2,
+   "bell": 1.8,
+   "rlc": [
+    7000.0,
+    1.3
+   ],
+   "body": [
+    [
+     "lshelf",
+     150.0,
+     0.7,
+     -2.0
+    ],
+    [
+     "hshelf",
+     3500.0,
+     0.7,
+     6.0
+    ]
+   ],
+   "drive_row": 3,
+   "level_db": 3.5
+  },
+  "WURLY": {
+   "_doc": "Dock: a Wurlitzer-ish voicing of the same tine model (no reed or electrostatic pickup is modelled): off-axis pickup (less H2), hard hammer and strong overtones (the reed's bright, short attack), a resonant pickup load and a small amp's mid peak (nasal), its own level. Dock's engine adds a symmetric soft clip (odd harmonics) and a mono tremolo for this TYPE (firmware/src/eng_ep.c).",
+   "off": -0.15,
+   "bark": 1.25,
+   "ham": 1.35,
+   "bell": 1.5,
+   "rlc": [
+    3200.0,
+    1.6
+   ],
+   "body": [
+    [
+     "hp2",
+     140.0,
+     0.7,
+     0.0
+    ],
+    [
+     "peak",
+     1100.0,
+     1.4,
+     6.0
+    ]
+   ],
+   "drive_row": 0,
+   "level_db": -3.0
+  }
+ },
+ "peak_dbfs": -6.0,
+ "_doc_levels": "gain_target_dbfs: RMS (50..300 ms) of one voice at v = 100, every key exactly; set so a 4-note chord at v = 127 peaks near -3 dBFS (host, effects bypassed). peak_dbfs: a global cap on 90 % of the keys single-voice v = 127 peaks (+3 dB); it does not bind at this target.",
+ "velocity_trim": {
+  "iterations": 3,
+  "gain": 0.85,
+  "max_db": 6.0,
+  "_doc": "small per-key RH_PAMP trim at the velocity anchors so each key's level curve (re v = 104) follows the median curve of all keys (monotonic). The physics (hammer_contact) is already even to ~3 dB; the trim is bounded to +-max_db and reported in rhodes_spec.json (pulse.pamp vs pulse.pamp_phys). iterations 0 = physics only."
+ },
+ "voicing": {
+  "h2_v100_points": [
+   [
+    21,
+    -20.0
+   ],
+   [
+    40,
+    -18.0
+   ],
+   [
+    52,
+    -13.0
+   ],
+   [
+    72,
+    -11.0
+   ],
+   [
+    103,
+    -16.0
+   ],
+   [
+    108,
+    -16.0
+   ]
+  ],
+  "_doc": "pickup voicing: H2/H1 (dB, 30..300 ms) of a v = 100 strike per key; each key's tip scale (b) is set to it (gen_rhodes.voice_pickups). A Rhodes at mf is mostly fundamental (R05 W3: the bass voiced for 'mostly fundamental'; W6 E3: fundamental loudest); the bark grows with the tip swing toward v = 127. Replaces tip_peak_gap_v127 as the b scale (that one only sets the starting point)."
+ }
+}

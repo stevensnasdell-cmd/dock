@@ -17,6 +17,9 @@ mkdir -p "$OUT" build/gen
     python3 tools/gen_prophet_factory.py build/gen/melodee_prophet_factory.h
     python3 tools/gen_909_tables.py build/gen/x0x_drum_tables.h
 }
+# Dock's EP: the Rhodes tables from FRodhes' physics (numpy + scipy: .venv-tools, see emu/README.md); the generator
+# skips the ~30 s run while its inputs are unchanged
+.venv-tools/bin/python tools/gen_rhodes.py build/gen/rhodes_tables.h
 
 if ! command -v emcc >/dev/null 2>&1; then
     : "${EMSDK_PYTHON:=$HOME/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12}"

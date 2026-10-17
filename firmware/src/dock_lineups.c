@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Steven Snasdell */
 /* Dock's Line-ups (DOCK.md §5): each a sound for Bass, Keys, Lead and the drummer, from the engines there are today
- * (best guesses, to tune by ear; EP, WHEEL and PLUCK will replace the stand-ins). SELECT on HOME steps through them in
+ * (best guesses, to tune by ear; WHEEL and PLUCK will replace the stand-ins). SELECT on HOME steps through them in
  * this order and loads all four (ui_dock.c dock_lineup_turn). Power-on is the first, Yacht, as engines.c TRK_DEF.
  * Still to come with them: each one's room (effects), voice split, macros and a drum groove. Included by ui_dock.c */
 typedef struct {
@@ -11,7 +11,7 @@ typedef struct {
 
 static const dock_lineup_t DOCK_LINEUPS[] = {
     {"Yacht", {{ENGI_PROPHET, 4},    /* Funk Bass II */
-               {ENGI_FM6, 0},        /* TINE EP (the Suitcase Rhodes' stand-in) */
+               {ENGI_EP, EP_SUITCASE}, /* SUITCASE: the Rhodes, stereo vibrato */
                {ENGI_JUNO, 1},       /* SILK LEAD */
                {ENGI_DRUM, 0}}},     /* 808 KIT */
     {"Kraut", {{ENGI_PROPHET, 21},   /* Bass Face: a squelchy mono */
@@ -19,7 +19,7 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
                {ENGI_JUNO, 5},       /* SQUARE LEAD */
                {ENGI_DRUM, 2}}},     /* SID KIT: dry, machine */
     {"Hot", {{ENGI_PROPHET, 86},     /* Uptight Bass (the upright's stand-in) */
-             {ENGI_PROPHET, 62},     /* Vintage Wurly */
+             {ENGI_EP, EP_WURLY},    /* WURLY: mono tremolo */
              {ENGI_CZ, 11},          /* ELEC.GUITAR: surf twang */
              {ENGI_DRUM, 0}}},       /* 808 KIT (brushes to come) */
     {"Mod", {{ENGI_CZ, 15},          /* ELEC.BASS 2: round, Motown */

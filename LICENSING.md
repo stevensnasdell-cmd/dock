@@ -10,6 +10,20 @@ Dock modifications: Copyright (C) 2026 Steven Snasdell
 The emulator page `emu/panel/` is from Felucca's browser build (GPL-3.0, Leo Kuroshita, Hügelton Instruments) and
 keeps its notice; its DotGothic16 font is SIL OFL 1.1 (`emu/panel/fonts/OFL.txt`).
 
+The EP engine's Rhodes is FRodhes by Leonardo Mirabal (<https://github.com/leonardoMirabal/frodhes>, 0.9.2, commit
+`e49a49d`), GPL-3.0-only:
+
+| What | Who | Where |
+| --- | --- | --- |
+| The voice model (FRodhes `firmware/src/rhodes.c`: modes, hammer pulse, pickup, damper, pickup load and body; `fxp.h`), wrapped as a Melodee engine by Dock | Portions Copyright (C) 2026 Leonardo Mirabal; Dock's wrapper Steven Snasdell | `firmware/src/eng_ep.c` |
+| The table generator (FRodhes `tools/gen_rhodes.py`), changed by Dock (output path, a fifth TYPE, a skip while unchanged) | Portions Copyright (C) 2026 Leonardo Mirabal; Dock's changes Steven Snasdell | `tools/gen_rhodes.py` |
+| The physics behind the tables, unchanged: hammer contact, pickup flux, tine FE, tine-bar modes, coefficients, the golden model | Leonardo Mirabal | `tools/rhodes/*.py` |
+| The model's data: `params.json` (FRodhes' priors; Dock added the WURLY type) and `tine_lengths.csv` (Rhodes service-manual tine lengths as FRodhes tabulated them) | Leonardo Mirabal; WURLY Steven Snasdell | `tools/rhodes/data/` |
+
+The tables themselves (`build/gen/rhodes_tables.h`) are generated at build time and not kept in the tree. "Rhodes",
+"Fender" and "Wurlitzer" are trademarks of their owners; Dock's EP is an independent emulation, not affiliated with or
+endorsed by them.
+
 Dock's UI fonts, all SIL OFL 1.1, licences beside them in `assets/fonts/`: Space Grotesk (The Space Grotesk Project
 Authors, `OFL-SpaceGrotesk.txt`), Unbounded (The Unbounded Project Authors, `OFL-Unbounded.txt`), Space Mono (The Space
 Mono Project Authors, `OFL-SpaceMono.txt`).

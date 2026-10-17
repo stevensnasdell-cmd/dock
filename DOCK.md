@@ -49,7 +49,7 @@ This file is the brief. Build from it; update it when a decision changes.
 |---|---|---|
 | **PROPHET** | From Melodee | Basses, brass, leads |
 | **JUNO** | **New** | Pads, strings, silk leads, chorus I/II |
-| **EP** | **New** | Rhodes (tine + magnetic pickup bark), Wurlitzer (reed + electrostatic pickup), tremolo |
+| **EP** | **New** (built: FRodhes' physical Rhodes) | Rhodes (tine + magnetic pickup bark), Wurlitzer (reed + electrostatic pickup), tremolo |
 | **WHEEL** | From Felucca | Hammond + rotary; trimmed combo-organ registrations (Vox/Farfisa) |
 | **PLUCK** | From Felucca PHYS, trimmed | Upright-ish bass, surf/twang pluck |
 | **DRUM** | Melodee's `eng_drum.c` to start (synthesised 808/909/SID); port Felucca's CR-78-style kits, congas and bells for the rhythm box (synthesised, no samples) | The rhythm box drummer (see §8b) |
@@ -68,6 +68,12 @@ This file is the brief. Build from it; update it when a decision changes.
 - Pickup stage: soft asymmetric saturation scaled by velocity → Rhodes bark. Wurly: brighter partials, harder odd-harmonic clip, nasal tone.
 - Models: Suitcase, Stage, Wurly 200 (later: Clav-ish).
 - Built-in stereo tremolo / auto-pan (Suitcase) and mono tremolo (Wurly).
+
+**Built:** `firmware/src/eng_ep.c` is FRodhes' physically modelled Rhodes (Leonardo Mirabal, GPL-3.0: modal tine and
+tone bar, measured-style hammer pulses, the electromagnetic pickup's flux as the bark, damper, pickup load and amp
+body), its tables made by `tools/gen_rhodes.py`. TYPE: STAGE, SUITCASE, FELT, DYNO and a Wurly-ish voicing of the same
+tine (WURLY: no reed / electrostatic model yet; an odd-harmonic clip and mono tremolo). TREM uses the part's LFO.
+Flash cost: its tables are 144 KiB (`tests/ep_test.c` prints the breakdown); see CHANGELOG for what could shrink.
 
 ## 5. Line-ups (Docks)
 
@@ -188,7 +194,7 @@ Goal: play Dock on screen with the Circuit plugged in, and tune sounds by ear. N
 4. Voice reservation + mono/legato for Bass and Lead.
 5. Four macros (Tone/Bite/Shape/Space), PART/BAND modes.
 6. JUNO engine + chorus → tune against references.
-7. EP engine (Rhodes, Wurly) + tremolo → tune.
+7. EP engine (Rhodes, Wurly) + tremolo → tune. (Built from FRodhes; tuning by ear to do.)
 8. Bring back lean effects; build the five Line-ups with their rooms.
 9. New UI to the design language; Baud Girl-style navigation.
 10. FX layer, then looper (BARS → CAPTURE → FREE).

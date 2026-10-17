@@ -51,10 +51,13 @@ one-time setup: [emu/README.md](emu/README.md).
 Dock is a modified version of **[Melodee](https://github.com/keremimo/melodee)** by Kerem Kilic (Ellic Studio),
 itself a modified version of **[Felucca](https://github.com/hugelton/Felucca)** by Leo Kuroshita (@kurogedelic),
 Hügelton Instruments. The emulator's panel page and its design follow Felucca's browser build, after
-charlesvestal's [X0X](https://github.com/charlesvestal/fm1-x0x). Full credits for engines, fonts and ported DSP are
+charlesvestal's [X0X](https://github.com/charlesvestal/fm1-x0x). The EP engine's Rhodes is the physically modelled
+voice of **[FRodhes](https://github.com/leonardoMirabal/frodhes)** by Leonardo Mirabal (GPL-3.0), with its table
+generator. Full credits for engines, fonts and ported DSP are
 in [docs/MELODEE.md](docs/MELODEE.md#credits) and [LICENSING.md](LICENSING.md).
 
-Dock is not affiliated with or endorsed by Melodee, Felucca, Hügelton Instruments or M-VAVE. Please don't report
+Dock is not affiliated with or endorsed by Melodee, Felucca, FRodhes, Hügelton Instruments or M-VAVE. "Rhodes",
+"Fender" and "Wurlitzer" are trademarks of their owners; Dock's EP is an independent emulation. Please don't report
 Dock problems to them.
 
 ## Licence
@@ -64,4 +67,5 @@ Free software: [GPL-3.0-only](LICENSE). Bundled fonts and ported DSP keep their 
 
 Dock modifications: Copyright (C) 2026 Steven Snasdell\
 Melodee code: Copyright (C) 2026 Kerem Kilic (Ellic Studio)\
-Retained Felucca portions: Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+Retained Felucca portions: Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments\
+FRodhes' Rhodes model (the EP engine): Copyright (C) 2026 Leonardo Mirabal
