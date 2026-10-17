@@ -1,3 +1,17 @@
+# Dock licensing
+
+Dock is a modified version of Melodee by Kerem Kilic (Ellic Studio) (<https://github.com/keremimo/melodee>), which is
+a modified version of Felucca. Dock keeps their licensing, set out below: GPL-3.0-only, with the bundled and ported
+parts under their own licences. New Dock files credit Steven Snasdell; files changed from Melodee keep their
+original notices.
+
+Dock modifications: Copyright (C) 2026 Steven Snasdell
+
+The emulator page `emu/panel/` is from Felucca's browser build (GPL-3.0, Leo Kuroshita, Hügelton Instruments) and
+keeps its notice; its DotGothic16 font is SIL OFL 1.1 (`emu/panel/fonts/OFL.txt`).
+
+---
+
 # Melodee licensing
 
 Melodee is a modified version of Felucca by Leo Kuroshita (@kurogedelic), Hügelton Instruments

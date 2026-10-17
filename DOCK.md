@@ -50,7 +50,7 @@ This file is the brief. Build from it; update it when a decision changes.
 | **EP** | **New** | Rhodes (tine + magnetic pickup bark), Wurlitzer (reed + electrostatic pickup), tremolo |
 | **WHEEL** | From Felucca | Hammond + rotary; trimmed combo-organ registrations (Vox/Farfisa) |
 | **PLUCK** | From Felucca PHYS, trimmed | Upright-ish bass, surf/twang pluck |
-| **DRUM** | From Melodee (`eng_drum.c`: synthesised 808/909/SID kits, no samples) | The rhythm box drummer (see §8b) |
+| **DRUM** | Melodee's `eng_drum.c` to start (synthesised 808/909/SID); port Felucca's CR-78-style kits, congas and bells for the rhythm box (synthesised, no samples) | The rhythm box drummer (see §8b) |
 | FM6 | **Decision open — leaning cut** | DX piano / bells. Possible later "Glass Dock" add-on |
 | VOICE | **Cut** | — |
 
@@ -139,8 +139,8 @@ Records **notes, not audio** (tiny memory; sounds can be changed after recording
 
 A preset rhythm box in the spirit of the Ace Tone, Maestro Rhythm King and organ drum machines: pick a groove, press play. Not a sequencer.
 
-- **Sound:** synthesised kits from Melodee's DRUM engine (no flash cost). Optionally a few short one-shot samples per kit (e.g. brushed snare, tambourine) from the shared sample pool, kept small.
-- **Voices:** runs in its own lightweight lane, outside the 8 melodic voices. Watch its CPU cost on the emulator meter.
+- **Sound:** synthesised kits: Melodee's DRUM engine now, Felucca's CR-78-style kits ported in (no flash cost). Optionally a few short one-shot samples per kit (e.g. brushed snare, tambourine) from the shared sample pool, kept small.
+- **Voices:** runs in its own lightweight lane (part 4, MIDI ch 4), outside the 8 melodic voices: it never takes a band voice. Watch its CPU cost on the emulator meter.
 - **Controls** (Drummer page, or a held-button layer): Play/stop · Groove select · Fill (tap for a fill into the next bar) · Variation/intensity knob (sparse → busy) · Swing · Level.
 - **Clock:** follows external clock when present; otherwise internal tempo / tap.
 - **Steps aside:** auto-mutes when notes arrive on channel 10 (the Circuit's drums). Option: channel-10 notes play Dock's drum sounds directly instead.
