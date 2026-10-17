@@ -31,10 +31,14 @@ from pathlib import Path
 
 # name, bg, surf, text, accent, (track 1, 2, 3, 4) (8-bit RGB; stored as RGB565)
 PALETTES = [
-    ("NIGHT",    (23, 20, 31),    (36, 32, 46),    (243, 238, 248), (255, 255, 255),
-     ((255, 122, 92), (255, 193, 69), (70, 217, 176), (157, 140, 255))),
+    # Dock (docs/design/DOCK_STYLE.md "Colour"; Copyright (C) 2026 Steven Snasdell): the default; the four track
+    # colours are the band's: Bass violet, Keys green, Lead amber, Drums bone
+    ("DOCK",     (11, 11, 14),    (22, 22, 27),    (242, 240, 234), (242, 240, 234),
+     ((169, 139, 255), (70, 211, 154), (255, 181, 71), (233, 223, 199))),
     ("DAY",      (246, 242, 234), (231, 224, 212), (30, 26, 38),    (20, 16, 28),
      ((160, 42, 22), (116, 68, 0), (0, 92, 72), (78, 56, 184))),
+    ("NIGHT",    (23, 20, 31),    (36, 32, 46),    (243, 238, 248), (255, 255, 255),
+     ((255, 122, 92), (255, 193, 69), (70, 217, 176), (157, 140, 255))),
     ("CONTRAST", (0, 0, 0),       (34, 34, 34),    (255, 255, 255), (255, 255, 255),
      ((255, 128, 96), (255, 214, 0), (0, 236, 188), (176, 160, 255))),
     ("SUNSET",   (34, 16, 34),    (54, 28, 52),    (255, 236, 240), (255, 255, 255),
@@ -55,7 +59,7 @@ REC_DARK, REC_LIGHT = (255, 72, 72), (190, 24, 40)
 QR_LIGHT, QR_DARK, CRASH_BG, CRASH_INK = (255, 255, 255), (0, 0, 0), (160, 0, 0), (255, 255, 255)
 PCT = {"MID": 70, "DIM": 42, "LINE": 18, "SEL": 80, "TINT": 12, "KEY": 78}
 RAISE_PCT = 12                     # SURF -> TEXT
-LINE_PCT = {"NIGHT": 10}           # a palette's own LINE (else PCT["LINE"]): NIGHT's dividers as faint as the design's
+LINE_PCT = {"NIGHT": 10, "DOCK": 13}   # DOCK: LINE #2A2A33-ish, the style guide's           # a palette's own LINE (else PCT["LINE"]): NIGHT's dividers as faint as the design's
 
 
 # the knobs' colours (src/gfx.c T_KNOB): each track colour turned round the hue circle in OKLCH (degrees, and a lightness
@@ -195,7 +199,7 @@ def main():
     ap.add_argument("--report", action="store_true")
     a = ap.parse_args()
     fails = []
-    assert PALETTES[0][0] == "NIGHT" and len(PALETTES) <= 31
+    assert PALETTES[0][0] == "DOCK" and len(PALETTES) <= 31   # (the first is the default)
     rows = [derive(p, t) for p in PALETTES + [TEST_GRAY] for t in range(4)]
     for name, d in rows:
         if name.startswith("GRAY"):

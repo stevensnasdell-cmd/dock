@@ -49,7 +49,8 @@ PHASES = 2                             # horizontal phases per glyph (aa_raster.
 LEVELS = [4]                           # alpha steps kept of the 16 (--levels)
 KERN_PX = 28                           # the shared kerning's size (VL's: exact there, within 1/16 px at 16 / 20 px)
 # faces stored Huffman-coded (--huff): all four (the pixel faces are 1 bit and need no code)
-HUFF = [("LB", "TX", "VL", "HR")]
+HUFF_DEFAULT = ("LB", "TX", "VL", "HR")
+HUFF = [HUFF_DEFAULT]
 # HR (the hero, 48 px) draws a value or a name: every letter, the digits and the signs names and values use (the
 # factory names' ' ( ) too); the space as its range and the rest as extras. A string with another character is drawn
 # in VL (gfx.c text_has)
@@ -64,6 +65,23 @@ def preset(name):
                 ("TX", v + "@500", 20, (32, 126), EXTRAS, 0.0, PHASES),
                 ("VL", v + "@500", 28, (32, 126), EXTRAS, 0.0, 1),
                 ("HR", v + "@500", 48, (32, 32), [ord(c) for c in HR_CHARS[1:]], 0.0, 1),
+                ("PIX", str(PIXEL), 0, (32, 126), EXTRAS, None, 1, [("LB", 2, 1), ("TX", 2, 0), ("VL", 3, 0), ("HR", 5, 0)])]
+    if name == "dock":
+        # Dock (docs/design/DOCK_STYLE.md "Type"): Space Grotesk for words in the four roles; Unbounded for big figures
+        # (NV 28, NH 48) and the DOCK wordmark (WM 18, capitals); Space Mono for data (MN, MB 16). All SIL OFL 1.1.
+        # Copyright (C) 2026 Steven Snasdell (this preset)
+        A = FONTS.parent / "assets" / "fonts"
+        sg, ub = str(A / "SpaceGrotesk[wght].ttf"), str(A / "Unbounded[wght].ttf")
+        figs = [ord(c) for c in "0123456789./-+%:"]
+        return [("LB", sg + "@500", 16, (32, 126), EXTRAS, 0.0, PHASES),
+                ("TX", sg + "@500", 20, (32, 126), EXTRAS, 0.0, PHASES),
+                ("VL", sg + "@600", 28, (32, 126), EXTRAS, 0.0, 1),
+                ("HR", sg + "@600", 48, (32, 32), [ord(c) for c in HR_CHARS[1:]], 0.0, 1),
+                ("NV", ub + "@600", 28, (32, 32), figs, 0.0, 1),
+                ("NH", ub + "@600", 48, (32, 32), figs, 0.0, 1),
+                ("WM", ub + "@700", 18, (32, 32), [ord(c) for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"], 0.0, 1),
+                ("MN", str(A / "SpaceMono-Regular.ttf"), 16, (32, 126), [], 0.0, PHASES),
+                ("MB", str(A / "SpaceMono-Bold.ttf"), 16, (32, 126), [], 0.0, PHASES),
                 ("PIX", str(PIXEL), 0, (32, 126), EXTRAS, None, 1, [("LB", 2, 1), ("TX", 2, 0), ("VL", 3, 0), ("HR", 5, 0)])]
     raise SystemExit(f"unknown preset {name}")
 
@@ -179,8 +197,9 @@ def quantise(b, n):
 def shared_kern(faces, kern_min):
     """the kerning of every face as one table (KERN_PX): (C text, {ch: left class}, {ch: right class}, right classes,
     the order of AF_KL / AF_KR, bytes)"""
-    fonts = {f[1] for f in faces}
-    assert len(fonts) == 1, "one kerning table: every face of one font and weight"
+    fonts = {f[1].partition("@")[0] for f in faces}
+    assert len(fonts) == 1, "one kerning table: every face of one font (its first face's weight: Dock's 500 / 600)"
+    fonts = {faces[0][1]}
     order = []
     for f in sorted(faces, key=lambda f: -(f[3][1] - f[3][0] + 1 + len(f[4]))):
         for c in [chr(c) for c in range(f[3][0], f[3][1] + 1)] + [chr(c) for c in f[4]]:
@@ -281,7 +300,7 @@ def emit(face, tracking, gamma, kern):
     pairs = [(a, b) for a in chars for b in chars if kern and a in kern[0] and b in kern[1]]
     cost = {"data": len(data) + len(hc), "glyph_table": 8 * len(table), "kern": kbytes, "extras": len(extras),
             "glyphs": len(chars), "phases": phases, "pairs": len(pairs), "h": r["h"], "asc": r["asc"], "px": px,
-            "font": os.path.basename(font.split("#")[0]), "adv_digit": r["glyphs"]["0"][0] / 16}
+            "font": os.path.basename(font.split("#")[0]), "adv_digit": r["glyphs"].get("0", next(iter(r["glyphs"].values())))[0] / 16}
     cost["total"] = cost["data"] + cost["glyph_table"] + cost["kern"] + cost["extras"]
     return "\n".join(lines) + "\n", cost
 
@@ -362,7 +381,7 @@ def emit_pixel(face, metrics):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out")
-    ap.add_argument("--preset", choices=["rubik"])
+    ap.add_argument("--preset", choices=["rubik", "dock"])
     ap.add_argument("--face", action="append", default=[])
     ap.add_argument("--tracking", type=float, default=0.0, help="extra advance per glyph in em")
     ap.add_argument("--gamma", type=float, default=1.0, help="coverage curve; <1 thickens light-on-dark text")
@@ -371,6 +390,8 @@ def main():
     ap.add_argument("--levels", type=int, default=LEVELS[0], help="alpha steps kept (2..16)")
     a = ap.parse_args()
     HUFF[0] = tuple(x for x in a.huff.split(",") if x)
+    if a.preset == "dock" and a.huff == ",".join(HUFF_DEFAULT):
+        HUFF[0] = HUFF[0] + ("NV", "NH", "WM", "MN", "MB")
     LEVELS[0] = max(2, min(16, a.levels))
     faces = ([parse_face(s) for s in a.face] if a.face else []) or (preset(a.preset) if a.preset else None)
     if not faces:
@@ -378,8 +399,12 @@ def main():
     out = ["/* generated by tools/gen_aa_font.py: 4-bit alpha glyphs (Rubik, SIL OFL 1.1; Melodee Pixel; see "
            "assets/fonts) */",
            "#pragma once", "#include <stdint.h>", ""]
+    if a.preset == "dock":
+        out.append("#define UI_FONTS_DOCK 1   /* AF_NV, AF_NH (Unbounded figures), AF_WM (wordmark), AF_MN, AF_MB (Space Mono) */")
     total, metrics, kern = 0, {}, None
     aa = [f for f in faces if f[0] != "PIX"]
+    kerned = {f[0] for f in aa if f[1].partition("@")[0] == aa[0][1].partition("@")[0]} if aa else set()
+    aa = [f for f in aa if f[0] in kerned]
     if aa and a.kern_min:
         text, *kern = shared_kern(aa, a.kern_min)
         out.append(text)
@@ -392,7 +417,7 @@ def main():
             total += cost
             print(f"face PIX: {os.path.basename(f[1])} {n} glyphs, 1 bit, roles {[r[:2] for r in f[7]]} = {cost} B")
             continue
-        text, c = emit(f, a.tracking, a.gamma, kern)
+        text, c = emit(f, a.tracking, a.gamma, kern if f[0] in kerned else None)   # (other fonts: no kerning)
         metrics[f[0]] = (c["h"], c["asc"])
         out.append(text)
         total += c["total"]

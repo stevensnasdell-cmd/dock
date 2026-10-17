@@ -12,6 +12,12 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 - Reference screens HOME, FOCUS, FX, LOOPER at 240 × 240 (`docs/design/dock/ref/`, from `tools/dock_refs.py`,
   which flags any text that doesn't fit).
 
+- **Firmware fonts:** a `dock` preset in `tools/gen_aa_font.py` (now the build's): Space Grotesk in the four
+  type roles, plus new roles for Unbounded figures (`TY_NV` 28, `TY_NH` 48), the wordmark (`TY_WM`) and Space Mono
+  (`TY_MN`, `TY_MB`). 44.9 KB of glyphs (Melodee's Rubik set: 31.4 KB). Rubik's output is unchanged.
+- **DOCK palette**, the default: the style guide's tokens, the band's colours as the four track colours (passes every
+  contrast check). DAY moves up to second, beside it.
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the

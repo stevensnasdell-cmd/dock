@@ -42,6 +42,19 @@ static uint32_t ty_pixel(void);
 #define TY_TX (ty_pixel() ? &AP_TX : &AF_TX)  /* names, rows, the header, text: 20 px, pixel 2 x */
 #define TY_VL (ty_pixel() ? &AP_VL : &AF_VL)  /* values: 28 px, pixel 3 x */
 #define TY_HR (ty_pixel() ? &AP_HR : &AF_HR)  /* the hero (the chord, a sound's name alone): 48 px, pixel 5 x */
+#ifdef UI_FONTS_DOCK                          /* Dock's faces (docs/design/DOCK_STYLE.md "Type"); pixel: the nearest role */
+#define TY_NV (ty_pixel() ? &AP_VL : &AF_NV)  /* big figures, 28 px: Unbounded (figures . / - + % : only) */
+#define TY_NH (ty_pixel() ? &AP_HR : &AF_NH)  /* the hero's figures, 48 px: Unbounded */
+#define TY_WM (ty_pixel() ? &AP_TX : &AF_WM)  /* the DOCK wordmark, 18 px: Unbounded capitals */
+#define TY_MN (ty_pixel() ? &AP_LB : &AF_MN)  /* data, 16 px: Space Mono */
+#define TY_MB (ty_pixel() ? &AP_LB : &AF_MB)  /* data stressed, 16 px: Space Mono Bold */
+#else
+#define TY_NV TY_VL
+#define TY_NH TY_HR
+#define TY_WM TY_TX
+#define TY_MN TY_LB
+#define TY_MB TY_LB
+#endif
 
 /* host tests hook in here (layout lint, draw cost); nothing in the firmware */
 #ifndef GFX_HOOK_TEXT

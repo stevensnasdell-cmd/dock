@@ -29,11 +29,11 @@ FLAGS="-O2 -ffp-contract=off -w -Ibuild/gen -Ifirmware/src"
 EXPORTS='["_dock_init","_dock_midi","_dock_render","_dock_left","_dock_right","_dock_voices","_dock_rate"]'
 
 if [ "$1" = web ]; then                     # the panel emulator: build/emu/panel/ (serve the repo, open that)
-    [ -f build/gen/ui_fonts.h ] || {
+    grep -q UI_FONTS_DOCK build/gen/ui_fonts.h 2>/dev/null || {
         # the UI headers need Pillow with Raqm (fribidi) and fontTools: .venv-tools (see emu/README.md)
         P=.venv-tools/bin/python
         export DYLD_FALLBACK_LIBRARY_PATH="$PWD/.venv-tools/fribidi/lib"
-        $P tools/gen_aa_font.py build/gen/ui_fonts.h --preset rubik
+        $P tools/gen_aa_font.py build/gen/ui_fonts.h --preset dock
         $P tools/gen_icons.py build/gen/ui_icons.h
         $P tools/gen_aa_keycaps.py build/gen/ui_keycaps.h
         $P tools/gen_ui_palettes.py build/gen/ui_palettes.h
