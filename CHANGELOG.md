@@ -22,6 +22,8 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   Melodee's own host tests assume the shared budget: run them with `-DDOCK_VOICES=0`.
 
 ### Emulator
+- Fixed harsh noise when turning MASTER down: the emulator's copy of the pot smoothing was unsigned and wrapped to a
+  huge volume (the firmware's own is signed). The browser now also plays at the device's level (-6 dBFS ceiling).
 - On-screen FM-1 in the browser (`emu/`): the real firmware (DSP, sequencer, UI) compiled to WebAssembly, with
   clickable knobs, buttons and keys, the 240 × 240 screen, and Web MIDI from the Circuit. Page and design from
   Felucca's browser build.

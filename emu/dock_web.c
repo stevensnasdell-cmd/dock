@@ -28,7 +28,7 @@ static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
 
 /* --------------------------------------------------------- the device --- */
 static uint32_t web_booted, web_last_frame, web_draws_seen;
-static uint32_t web_master_adc = 700, web_knob = 700u * 16u;
+static int32_t web_master_adc = 700, web_knob = 700 * 16;      /* signed, as main.c's knob */
 
 static void web_power_on(void)
 {
@@ -43,12 +43,12 @@ static void web_power_on(void)
     web_booted = 1;
 }
 
-/* main.c's MASTER pot: the same smoothing and curve */
+/* main.c's MASTER pot: the same smoothing and curve (signed: turning it down must not wrap) */
 static void web_master_poll(void)
 {
     uint32_t k10;
-    web_knob += (web_master_adc * 16u - web_knob) / 8u;
-    k10 = web_knob / 16u;
+    web_knob += (web_master_adc * 16 - web_knob) / 8;
+    k10 = (uint32_t)(web_knob / 16);
     song.master_q12 = (k10 * k10) >> 8;
 }
 
@@ -83,8 +83,8 @@ static void web_ms(void)
             uint32_t i = (ring_w++ % RING) * 2u;
             if (k & 1u)
                 scope_buf[scope_w++ & (SCOPE_N - 1u)] = (int16_t)o[2u * k];
-            ring[i] = (float)o[2u * k] * (1.0f / 32768.0f);
-            ring[i + 1] = (float)o[2u * k + 1u] * (1.0f / 32768.0f);
+            ring[i] = (float)o[2u * k] * (1.0f / 65536.0f);        /* as audio.c: Q15 << OUT_SHIFT (7) into 24 bit, */
+            ring[i + 1] = (float)o[2u * k + 1u] * (1.0f / 65536.0f);   /* a -6 dBFS ceiling: the device's level */
         }
     }
     if (!web_booted)
@@ -153,7 +153,7 @@ EXPORT void web_enc(uint32_t role, int32_t n)
     if (role < NE)
         host_enc[panel.enc[role] % 7u] += n * panel.dir[role];
 }
-EXPORT void web_master(uint32_t v) { web_master_adc = v > 1023u ? 1023u : v; }
+EXPORT void web_master(uint32_t v) { web_master_adc = v > 1023u ? 1023 : (int32_t)v; }
 /* a channel message from Web MIDI, as a USB-MIDI packet arrives (usb.c midi_enqueue): 0 = the ring was full */
 EXPORT uint32_t web_midi(uint32_t status, uint32_t d1, uint32_t d2)
 {
@@ -279,6 +279,17 @@ int main(int argc, char **argv)
     tap_button(B_EDIT);
     run_ms(300);
     save_ppm(argc > 2 ? argv[2] : "build/emu/screen_edit.ppm");
+    {   /* MASTER all the way down and up: the volume stays within the pot's range (no wrap) */
+        int32_t qmax = 0;
+        for (k = 0; k <= 1023u; k += 31u) {
+            web_master(1023u - k);
+            run_ms(16);
+            qmax = song.master_q12 > qmax ? song.master_q12 : qmax;
+        }
+        printf("selftest: MASTER swept down, largest volume %d (%s)\n", qmax, qmax <= 4096 ? "ok" : "WRAPPED");
+        if (qmax > 4096)
+            return 1;
+    }
     printf("selftest: %u screen changes, %u ms\n", web_screen_draws(), fm1_ms);
     return 0;
 }
