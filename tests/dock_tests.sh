@@ -19,6 +19,10 @@ run "the band on the UI" $OUT/dock_ui_test
 # track-count and track-1 chord checks fail by design. Dock's own behaviour is checked by the Dock tests here.
 cc $F -DMELODEE_USB_AUDIO=1 -DDOCK_BAND=0 -o $OUT/ui_test_melodee tests/ui_test.c -lm
 run "UI (Melodee rules, DOCK_BAND=0)" $OUT/ui_test_melodee
+# every screen in every palette (Melodee's lint): no text overlapping, cut or spilling out of its cell
+cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/ui_render tests/ui_render.c -lm
+mkdir -p build/ui_new/ppm
+run "every screen: no text cut or overlapping" sh -c "$OUT/ui_render build/ui_new | tee /dev/stderr | grep -q ' 0 lint findings'"
 cc $F -DMELODEE_USB_AUDIO=1 -DDOCK_WEB_SELFTEST -o build/emu/web_selftest emu/dock_web.c -lm
 run "emulator boot, keys, EDIT" build/emu/web_selftest
 exit $fail

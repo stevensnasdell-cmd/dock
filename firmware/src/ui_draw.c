@@ -481,8 +481,8 @@ static void draw_column(uint32_t c, const char *label0, const char *val0, const 
         (void)icon;                                     /* (the design draws no card icons) */
         if (!strip && label[0]) {
             const char *ls = cell_label(label, COL_W - 2);
-            cv_text_fit(COL_W / 2 - (text_w(lf, ls) < COL_W - 2 ? text_w(lf, ls) : COL_W - 2) / 2, 3, lf, ls, lc,
-                        cbg, COL_W - 2);
+            cv_text_fit(COL_W / 2 - (text_w(lf, ls) < COL_W - 2 ? text_w(lf, ls) : COL_W - 2) / 2, DOCK_BAND ? 1 : 3,
+                        lf, ls, lc, cbg, COL_W - 2);   /* (Dock: 2 px up, Space Grotesk's Q tail clears a chip under it) */
         }
         if (kid >= 0)                                   /* "[OCT+]": the keycap (accent: it would act; DIM: it would not) */
             x = cv_keycap(COL_W / 2 - kc_w((uint32_t)kid) / 2, 21, (uint32_t)kid,

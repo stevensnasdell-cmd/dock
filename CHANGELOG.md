@@ -27,6 +27,9 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   track numerals (sound bar, mixer, browser); knob cells are cards with the label in grey, the turning knob's cell
   filled with the member's colour.
 
+- Every screen passes Melodee's layout lint in Space Grotesk (0 findings over 261 screens x 9 palettes): knob
+  labels sit 2 px higher so Space Grotesk's Q tail clears an on/off chip. `tests/dock_tests.sh` runs the lint.
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the
