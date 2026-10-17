@@ -1035,7 +1035,8 @@ static void preset_go(uint32_t n)                    /* load list index n into t
     } else {
         if (e != TSEL->eng_req) {
             set_engine(e);
-            ui_say("ENGINE ", ENGINES[TSEL->eng_req]->name);
+            if (!(DOCK_BAND && ui.home))                /* (Dock's HOME: the browse strip names the engine) */
+                ui_say("ENGINE ", ENGINES[TSEL->eng_req]->name);
         }
         apply_preset(k);
     }

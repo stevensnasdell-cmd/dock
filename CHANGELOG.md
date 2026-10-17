@@ -54,6 +54,8 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   strip for 2 s for a browse strip: the engine in the member's colour, the category, the place in the list
   ("PROPHET BRASS 7 / 337"). Long Prophet names show whole on HOME ("Formant Seraphim", not "Formant Seraphi").
 
+- HOME's header no longer gives way to an "ENGINE ..." message when a sound changes engine: the browse strip says it.
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the
