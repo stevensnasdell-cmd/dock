@@ -39,7 +39,8 @@ This file is the brief. Build from it; update it when a decision changes.
 - If a member exceeds its own share it steals from itself (oldest released note first).
 - Under CPU overload, protect Bass and Lead first (SLOOP's rule).
 - Channels configurable per member (1–16 or OFF). Channel 10 ignored by default (Circuit drums).
-- Program Change on a member's channel loads its sound; Program Change on a global channel loads a Line-up.
+- Program Change on a member's channel loads its sound; Program Change on a global channel loads a Line-up. **Not yet built:** Melodee has no Program Change handling (Felucca does).
+- Sounds: Bass, Keys and Lead browse the same list (every engine but the drums), in the same order; the drummer (part 4) browses drum kits only.
 - Thickness without voices: detuned dual oscillators, sub-osc, drive, chorus/ensemble, widener. Unison is optional and visibly costs voices.
 
 ## 4. Engines

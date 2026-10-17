@@ -47,6 +47,34 @@ int main(void)
     dcheck("REC held: no capture into a pattern", steps_sig(TSEL) == sig && ui.home == 1u);
     dcheck("the Stage sheet has no Add / Remove track", NELEM(SHEET_STAGE) == 5u);
 
+    {   /* the sound lists: the band's three the same, entry by entry, with no drums; the drummer's only drums */
+        uint32_t tot[NPART], h[NPART], drums_in_band = 0, other_in_drums = 0, n, src, kk, e, k, steps_ok = 1;
+        for (k = 0; k < NPART; k++) {
+            song.sel = (uint8_t)k;
+            list_scan(LM_ALL, 0xFFFFFFFFu, 0, 0xFFFFFFFFu, &src, &kk, &tot[k]);
+            h[k] = 0;
+            for (n = 0; n < tot[k]; n++) {
+                src = preset_all_at(n, &kk);
+                e = src_engine(src, kk);
+                h[k] = h[k] * 31u + src * 1009u + kk;
+                if (k < DOCK_DRUMS && e == ENGI_DRUM) drums_in_band++;
+                if (k == DOCK_DRUMS && e != ENGI_DRUM) other_in_drums++;
+            }
+            e = trk[k].eng_req;                           /* KNOB 4's engine steps, both ways */
+            for (n = 0; n < 2u * NENG_SHOWN; n++) {
+                e = eng_step(e, n < NENG_SHOWN ? 1 : -1);
+                steps_ok &= DOCK_ENGINE_OK(k, e) != 0;
+            }
+        }
+        song.sel = 0;
+        dcheck("Bass, Keys and Lead browse the same list, in the same order", tot[0] == tot[1] && tot[1] == tot[2] &&
+                                                                                h[0] == h[1] && h[1] == h[2]);
+        dcheck("  with no drum kits in it", drums_in_band == 0u && tot[0] > 0u);
+        dcheck("the drummer browses drum kits only", other_in_drums == 0u && tot[DOCK_DRUMS] > 0u);
+        dcheck("KNOB 4's engine steps keep to each part's engines", steps_ok);
+        printf("dock ui:   (the band's list: %u sounds; the drummer's: %u)\n", tot[0], tot[DOCK_DRUMS]);
+    }
+
     printf(fails ? "dock ui: %d FAILED\n" : "dock ui: all passed\n", fails);
     return fails != 0;
 }

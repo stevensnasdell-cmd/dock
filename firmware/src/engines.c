@@ -220,7 +220,13 @@ static uint32_t eng_rank(uint32_t e)
 }
 static uint32_t eng_step(uint32_t e, int32_t dir)
 {
-    return eng_vis((eng_rank(e % NENGINES) + (dir > 0 ? 1u : NENG_SHOWN - 1u)) % NENG_SHOWN);
+    uint32_t i, n = e % NENGINES;
+    for (i = 0; i < NENG_SHOWN; i++) {                  /* (Dock: past the engines this part does not play) */
+        n = eng_vis((eng_rank(n) + (dir > 0 ? 1u : NENG_SHOWN - 1u)) % NENG_SHOWN);
+        if (DOCK_ENGINE_OK(song.sel % NTRK, n))
+            break;
+    }
+    return n;
 }
 
 /* the parts at power-on (engine, preset; the steps empty): bass, pad, lead, drums */

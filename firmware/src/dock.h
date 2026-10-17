@@ -22,6 +22,13 @@ enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };
 #define DOCK_BADGE(k) ((char)('1' + (k)))
 #endif
 
+/* the engines a part may play: the drummer only drums, the band everything else (the same list on all three) */
+#if DOCK_BAND
+#define DOCK_ENGINE_OK(part, e) (((part) == DOCK_DRUMS) == ((e) == ENGI_DRUM))
+#else
+#define DOCK_ENGINE_OK(part, e) 1
+#endif
+
 /* Bass and Lead: the members that play one note at a time */
 #define DOCK_MONO_PART(part) (DOCK_BAND && ((part) == DOCK_BASS || (part) == DOCK_LEAD))
 

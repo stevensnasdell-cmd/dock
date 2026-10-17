@@ -57,6 +57,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 - HOME's header no longer gives way to an "ENGINE ..." message when a sound changes engine: the browse strip says it.
 
 ### Band
+- **Sounds by part:** Bass, Keys and Lead browse one and the same list (every engine but the drums, 333 sounds), in
+  the same order; the drummer (part 4) browses drum kits only. KNOB 4's engine jump keeps to the same rule. Checked in
+  `tests/dock_ui_test.c`.
+- Known gap: Program Change from the Circuit does nothing yet (Melodee never handled it; DOCK.md §3 wants it).
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the
   JUNO and EP engines exist: PROPHET Funk Bass II, FM6 TINE EP, PROPHET Nice n Smooth, 808 KIT.

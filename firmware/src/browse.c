@@ -253,7 +253,7 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
         for (i = 0; i < recent_n; i++) {
             src = recent[i] >> 16;
             k = recent[i] & 0xFFFFu;
-            if (!entry_ok(src, k))
+            if (!entry_ok(src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)))
                 continue;
             if (src == ws && k == wk)
                 pos = c;
@@ -270,8 +270,8 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
                 k = (i + init) % len;
                 if (slot && (!up_used(k) || up_engine(k)!=eng_vis(seg/2u)))
                     continue;
-                if (!list_keep(m, src, k))
-                    continue;
+                if (!list_keep(m, src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)))
+                    continue;                           /* (Dock: the drummer's drums, the band's the rest) */
                 if (src == ws && k == wk)
                     pos = c;
                 if (c == n)
