@@ -236,7 +236,7 @@ phys_ref() {
         echo "== skip PHYS reference test (no DaisySP: set DAISYSP to a checkout)"
         return
     fi
-    $CC -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -Itests -c -o "$OUT/phys_fixed.o" tests/phys_fixed.c &&
+    $CC -DMELODEE_LEGACY_EXTRAS=1 -DPX_STRING_TUNED=0 -O2 $FW -Itests -c -o "$OUT/phys_fixed.o" tests/phys_fixed.c &&   # (DaisySP's own string tuning)
         c++ -O2 -std=c++14 -w -I"$D" -I"$D/Utility" -o "$OUT/phys_ref" tests/phys_ref.cpp \
             "$D/PhysicalModeling/modalvoice.cpp" "$D/PhysicalModeling/resonator.cpp" "$D/PhysicalModeling/stringvoice.cpp" \
             "$D/PhysicalModeling/KarplusString.cpp" "$D/Filters/svf.cpp" "$D/Utility/dcblock.cpp" \

@@ -6,6 +6,36 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 ## Unreleased
 
 ### Engines
+- **Organ (WHEEL) and PLUCK (PHYS)** are back: Felucca's tonewheel organ and physical models (Leo Kuroshita; PLUCK's
+  string and resonators port DaisySP and Rings, MIT), which Melodee had switched off. `DOCK_ORGAN_PLUCK` (dock.h)
+  turns on just these two (`WHEEL_PHYS_ON`, core.h); PHASE, VOICE, TRIO and NOISE stay out. Stored IDs as before:
+  WHEEL 7, PHYS 9. Both play on Bass, Keys and Lead (the same list on all three), not on the drummer; PHYS shows as
+  **PLUCK**. Melodee's comments had called both "Melodee's own design": they say Felucca's again (AGENTS.md).
+- Organ sounds (appended after Felucca's five): **MOD HAMMOND** (888800000, 3rd percussion, drive, slow rotor),
+  LESLIE FAST, BALLAD SLOW, **VOX COMBO** (reedy slope, buzz, light vibrato) and FARFISA (thin, bright, deeper
+  vibrato). The combo organs' vibrato is the part's LFO, set when the sound loads.
+- PLUCK sounds (appended after Felucca's nine): **UPRIGHT** (dark, short, a finger thump; about 30 dB down after half a
+  second) and **SURF TWANG** (bright, plucked near the bridge, rings on).
+- PLUCK's string played up to a semitone sharp when dark or damped (DaisySP's string kept Rings' loop-filter
+  correction, made for a 2-pole filter, on its 1-pole one): `phys_dsp.c` now corrects for its own filter
+  (`PX_STRING_TUNED`, on with Dock; within about 5 cents now). Dark strings also get up to +12 dB of level back, so the
+  upright sits with the band.
+- HOME's knobs as DOCK.md §6: organ REG (drawbars), DRV, PERC, ROTR; PLUCK BRIT, POS, DAMP, STRC (the room's verb
+  comes with the effects). CC 74 / 71: organ TOP / DRV, PLUCK BRIT / POS.
+- Cost, host only (`tests/organ_pluck_test.c`, the same notes): a WHEEL voice is about 0.2 of a PROPHET voice (one
+  voice unit: plain 32-bit work), a PLUCK voice about 0.36 (two units: its 64-bit multiplies cost more on the FM-1's
+  32-bit core). JUNO is about 0.7, EP about 0.5. A device figure needs the JieLi toolchain (Phase 2).
+- Memory: a PLUCK part takes 12.6 KiB (three voices' strings), the largest engine state; with PLUCK on all three
+  members and the biggest drum kit the band needs 44,632 B of the 48 KiB arena. Melodee's `ram_audio_test` and
+  `resources_test` now count each part's own engines (the drummer never holds PLUCK). Flash: both engines together add about
+  15 KB on the host (`-Os`: 12.7 KB code, 2 KB data; no big tables), small beside EP's 144 KiB; the device figure
+  needs Phase 2. If the device build runs short, FM6 is the agreed first cut.
+- `tests/organ_pluck_test.c` (in `tests/dock_tests.sh`): both pickable on the band, not the drummer; every sound
+  plays unclipped; organ pitch, drive, rotary, single-trigger percussion and FARFISA's vibrato; upright short,
+  twang long and bright, both in tune; key-up; a legato slide on the Bass; cost; the band's memory. The emulator's
+  self-test (`emu/build.sh test`, native == wasm) now also plays the organs and the plucks. Melodee's
+  `engine_retirement_test` no longer counts WHEEL and PHYS as retired under Dock.
+- The ENG setting's list names EP and JUNO (it showed "-" for both).
 - **EP** (`firmware/src/eng_ep.c`), Dock's electric piano: the physically modelled Rhodes of
   [FRodhes](https://github.com/leonardoMirabal/frodhes) by Leonardo Mirabal (GPL-3.0), ported as a Melodee engine.
   Per voice a hammer force pulse (from a contact simulation) strikes the tine's modes (the tine-bar pair, two
@@ -99,6 +129,8 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Line-ups:** Mod's Keys are WHEEL MOD HAMMOND and its Lead VOX COMBO (were PROPHET Leslied, JUNO GATE ORGAN);
+  Hot's Bass is PLUCK UPRIGHT and its Lead SURF TWANG (were PROPHET Uptight Bass, CZ ELEC.GUITAR).
 - **Line-ups:** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's Bass, Keys, Lead and drum
   kit (first guesses from today's engines, `firmware/src/dock_lineups.c`). HOME's header names the Line-up and a strip
   shows it ("LINE-UP KRAUT 2 / 5") while SELECT turns. Tempo no longer sits on SELECT; it needs a new place.

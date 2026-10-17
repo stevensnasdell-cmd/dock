@@ -20,6 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef PX_STRING_TUNED
+#define PX_STRING_TUNED DOCK_ORGAN_PLUCK /* (Dock) the string's loop-filter compensation for its OnePole: px_string_block */
+#endif
 /* Physical models of DaisySP (Source/PhysicalModeling, Filters, Noise, Utility; MIT) in fixed
  * point for a CPU without an FPU. The PHYS engine (eng_phys.c) plays them.
  *
@@ -567,9 +570,12 @@ static __attribute__((noinline)) void px_string_block(px_string_blk_t *B, px_str
         int32_t s = px_sin(df >> 1), c = px_sin((df >> 1) + 0x40000000u);
         B->G = (int32_t)(((int64_t)s << 30) / (s + c));
     }
-    /* damping compensation 1 - 2 atan(1 / ratio) / 2 pi, ratio = 2^(dcut / 12) >= 2 */
+    /* damping compensation 1 - 2 atan(1 / ratio) / 2 pi, ratio = 2^(dcut / 12) >= 2. That is Rings' (its damping
+     * filter is a 2-pole Svf); DaisySP's is this OnePole, whose phase is half of it, so a dark or damped string played
+     * up to a semitone sharp. Dock (PX_STRING_TUNED, dock.h DOCK_ORGAN_PLUCK): the OnePole's own, atan(1 / ratio) / 2 pi.
+     * Off: DaisySP's (tests/phys_ref.cpp compares with it) */
     x = (int32_t)(((uint64_t)1 << 46) / px_exp2(dcut / 12));   /* 1 / ratio, Q30 */
-    B->comp = (1 << 30) - px_m(px_atan(x), 341782638, 30);    /* * 1 / pi */
+    B->comp = (1 << 30) - px_m(px_atan(x), PX_STRING_TUNED ? 170891319 : 341782638, 30);   /* * 1 / 2 pi, 1 / pi */
     sp = px_m(px_m(nl, 131072 - nl, 16), 14746, 16);     /* nl (2 - nl) 0.225, Q16 */
     sc = (int32_t)(((uint64_t)delay * 238) >> 16);       /* 160 / sr * delay, Q16 */
     sc = px_clamp(sc, 65536, 137626);

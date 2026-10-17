@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* WHEEL: a tonewheel-style additive organ. Melodee's own design.
+/* WHEEL: a tonewheel-style additive organ. Felucca's design (Leo Kuroshita, Felucca 1.0); Melodee moved its state
+ * into the part's engine block (drw_part_t) and retired it; Dock brings it back as its organ (dock.h DOCK_ORGAN_PLUCK)
+ * with Hammond and combo-organ sounds and HOME's knobs in DOCK.md's order.
  *
  * Partials: nine sines per voice at the classic drawbar footages, 16' 5 1/3' 8' 4' 2 2/3' 2'
  * 1 3/5' 1 1/3' 1' (0.5, 1.5, 1, 2, 3, 4, 5, 6, 8 times the note), each with a level 0..8
@@ -273,7 +275,31 @@ static const preset_t WHEEL_PRESETS[] = {
     {"GOSPEL", {6, 0, 0, 0, 1, 60, 40, 2}, {0, 64, 127, 45}, 0, 0},
     {"SOFT FLUTE", {1, 0, -2, 0, 0, 10, 0, 1}, {0, 64, 127, 55}, 0, 0},
     {"ROCK DRIVE", {7, 0, 0, 0, 0, 70, 100, 2}, {0, 64, 127, 40}, 0, 0},
+    /* Dock's (appended: the stores and the Line-ups hold preset numbers) */
+    {"MOD HAMMOND", {5, 0, 0, 0, 2, 60, 52, 1}, {0, 64, 127, 40}, 0, 0},   /* 888800000, 3rd perc, growl, slow rotor */
+    {"LESLIE FAST", {6, 0, 0, 1, 0, 50, 36, 2}, {0, 64, 127, 42}, 0, 0},   /* gospel bars, fast rotor */
+    {"BALLAD SLOW", {3, 0, -1, 0, 0, 24, 0, 1}, {0, 64, 127, 56}, 0, 0},   /* 838000000 soft, slow rotor */
+    {"VOX COMBO", {10, 0, 0, 2, 0, 12, 72, 0}, {0, 64, 127, 30}, 0, 0},    /* reedy slope, buzz, no rotor */
+    {"FARFISA", {11, 0, -1, 3, 0, 8, 58, 0}, {0, 64, 127, 28}, 0, 0},      /* thin and bright, vibrato */
 };
+#define WHEEL_MOD_HAMMOND 5u                           /* Mod's Keys (dock_lineups.c) */
+#define WHEEL_VOX 8u                                   /* Mod's Lead */
+
+/* the combo organs' vibrato, on the track's LFO (a load set it to its defaults first): rate, pitch depth (1 = +-19
+ * cents) per preset, 0 = none. Vox about 5.7 Hz, light; Farfisa about 6.6 Hz, deeper */
+static const uint8_t WHEEL_VIB[][2] = {[8] = {90, 1}, [9] = {93, 2}};
+static void wheel_preset_loaded(track_t *t, uint32_t pi)
+{
+    if (pi >= NELEM(WHEEL_VIB) || !WHEEL_VIB[pi][1])
+        return;
+    t->p[P_LWAVE] = 0;                                 /* a sine */
+    t->p[P_LRATE] = WHEEL_VIB[pi][0];
+    t->p[P_LD_PIT] = WHEEL_VIB[pi][1];
+}
+
+/* (Dock) host measurement (tests/organ_pluck_test.c, the same notes): a WHEEL voice costs about 0.2 of a PROPHET voice,
+ * all 32-bit work: one unit against the Prophet's three. To be confirmed on the device (Phase 2) */
+static uint32_t wheel_units(const track_t *t) { (void)t; return DOCK_ORGAN_PLUCK ? 1u : 2u; }   /* (Melodee: 2, the default) */
 
 static const engine_t ENG_WHEEL = {
     .name = "WHEEL",
@@ -292,6 +318,11 @@ static const engine_t ENG_WHEEL = {
     .npresets = NELEM(WHEEL_PRESETS),
     .note_on = wheel_note_on,
     .render = wheel_render,
+#if DOCK_BAND
+    .knob = {P_E0, P_E6, P_E4, P_E7},                  /* DOCK.md §6: drawbars, drive, percussion, rotary */
+#else
     .knob = {P_E0, P_E4, P_E6, P_E7},
+#endif
     .block = wheel_block,
+    .units = wheel_units,
 };

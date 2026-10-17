@@ -102,6 +102,30 @@ int main(void)
         dcheck("Bass and Lead stay mono legato in every line-up", mono);
     }
 
+    {   /* Mod and Hot: the organ and PLUCK, by name, as SELECT loads them */
+        uint32_t i, mod = 0, hot = 0;
+        char nm[NPART][21];
+        for (i = 0; i < DOCK_NLINEUPS; i++) {
+            if (str_eq(DOCK_LINEUPS[i].name, "Mod")) mod = i;
+            if (str_eq(DOCK_LINEUPS[i].name, "Hot")) hot = i;
+        }
+        ui_power_on();
+        frame();
+        while (dock_lineup != mod) { dock_lineup_turn(1); frame(); }
+        for (i = 0; i < NPART; i++) str_cpy(nm[i], eng_preset(ENGINES[trk[i].eng_req], trk[i].preset)->name, 21);
+        dcheck("Mod: Keys WHEEL MOD HAMMOND, rotary on, drive", trk[DOCK_KEYS].eng_req == ENGI_WHEEL &&
+               str_eq(nm[DOCK_KEYS], "MOD HAMMOND") && trk[DOCK_KEYS].p[P_E7] > 0 && trk[DOCK_KEYS].p[P_E6] > 0);
+        dcheck("Mod: Lead WHEEL VOX COMBO, with vibrato, mono legato", trk[DOCK_LEAD].eng_req == ENGI_WHEEL &&
+               str_eq(nm[DOCK_LEAD], "VOX COMBO") && trk[DOCK_LEAD].p[P_LD_PIT] > 0 &&
+               trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO);
+        while (dock_lineup != hot) { dock_lineup_turn(1); frame(); }
+        for (i = 0; i < NPART; i++) str_cpy(nm[i], eng_preset(ENGINES[trk[i].eng_req], trk[i].preset)->name, 21);
+        dcheck("Hot: Bass PLUCK UPRIGHT, Lead PLUCK SURF TWANG", trk[DOCK_BASS].eng_req == ENGI_PHYS &&
+               str_eq(nm[DOCK_BASS], "UPRIGHT") && trk[DOCK_LEAD].eng_req == ENGI_PHYS && str_eq(nm[DOCK_LEAD], "SURF TWANG"));
+        dcheck("  the Lead's vibrato gone after Mod (a load resets the LFO)", trk[DOCK_LEAD].p[P_LD_PIT] == 0);
+        dcheck("  PHYS shows as PLUCK", str_eq(ENGINES[trk[DOCK_BASS].eng_req]->name, "PLUCK"));
+    }
+
     printf(fails ? "dock ui: %d FAILED\n" : "dock ui: all passed\n", fails);
     return fails != 0;
 }

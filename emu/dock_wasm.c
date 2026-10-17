@@ -70,43 +70,59 @@ uint32_t dock_voices(uint32_t part)
 }
 
 #ifdef DOCK_SELFTEST
-/* bass riff on ch 1, a chord on ch 2, a lead note on ch 3, 4 s */
+/* bass riff on ch 1, a chord on ch 2, a lead note on ch 3, 4 s; three times: the power-on sounds (Yacht), then the
+ * organs (Mod's Keys and Lead: WHEEL MOD HAMMOND, VOX COMBO), then the plucks (Hot's Bass and Lead: PLUCK UPRIGHT,
+ * SURF TWANG) */
 int main(int argc, char **argv)
 {
     static const uint8_t riff[8] = {36, 36, 48, 36, 39, 36, 43, 46};
     const uint32_t block = 128u, eighth = FS / 4u;
-    uint32_t f = 0, step = 0, held = 0, total = 4u * FS;
+    uint32_t total = 4u * FS, pass;
     FILE *w = fopen(argc > 1 ? argv[1] : "selftest.f32", "wb");
     if (!w)
         return 1;
     dock_init();
-    while (f < total) {
-        if (f >= step * eighth && step < 16u) {
-            if (held)
-                dock_midi(0x80, held, 0);
-            held = riff[step % 8u];
-            dock_midi(0x90, held, 100);
-            if (step == 0u || step == 8u) {
-                dock_midi(0x91, 60, 90); dock_midi(0x91, 63, 90); dock_midi(0x91, 67, 90);
-            }
-            if (step == 4u)
-                dock_midi(0x92, 72, 110);
-            if (step == 7u) {
-                dock_midi(0x81, 60, 0); dock_midi(0x81, 63, 0); dock_midi(0x81, 67, 0);
-                dock_midi(0x82, 72, 0);
-            }
-            step++;
+    for (pass = 0; pass < 3u; pass++) {
+        uint32_t f = 0, step = 0, held = 0;
+        if (pass == 1u) {
+            host_preset(&trk[DOCK_KEYS], ENGI_WHEEL, WHEEL_MOD_HAMMOND);
+            host_preset(&trk[DOCK_LEAD], ENGI_WHEEL, WHEEL_VOX);
+        } else if (pass == 2u) {
+            host_preset(&trk[DOCK_BASS], ENGI_PHYS, PHYS_UPRIGHT);
+            host_preset(&trk[DOCK_LEAD], ENGI_PHYS, PHYS_SURF);
         }
-        dock_render(block);
-        for (uint32_t i = 0; i < block; i++) {
-            fwrite(&dock_l[i], 4, 1, w);
-            fwrite(&dock_r[i], 4, 1, w);
+        if (pass)                                       /* (as a load sets them: dock.h DOCK_LOAD_VOICE) */
+            trk[DOCK_BASS].p[P_VOICE] = trk[DOCK_LEAD].p[P_VOICE] = V_LEGATO;
+        while (f < total) {
+            if (f >= step * eighth && step < 16u) {
+                if (held)
+                    dock_midi(0x80, held, 0);
+                held = riff[step % 8u];
+                dock_midi(0x90, held, 100);
+                if (step == 0u || step == 8u) {
+                    dock_midi(0x91, 60, 90); dock_midi(0x91, 63, 90); dock_midi(0x91, 67, 90);
+                }
+                if (step == 4u)
+                    dock_midi(0x92, 72, 110);
+                if (step == 7u) {
+                    dock_midi(0x81, 60, 0); dock_midi(0x81, 63, 0); dock_midi(0x81, 67, 0);
+                    dock_midi(0x82, 72, 0);
+                }
+                step++;
+            }
+            dock_render(block);
+            for (uint32_t i = 0; i < block; i++) {
+                fwrite(&dock_l[i], 4, 1, w);
+                fwrite(&dock_r[i], 4, 1, w);
+            }
+            f += block;
         }
-        f += block;
+        if (held)
+            dock_midi(0x80, held, 0);
+        printf("selftest: pass %u, %u frames at %u Hz, voices now %u/%u/%u\n", pass, total, FS, dock_voices(0),
+               dock_voices(1), dock_voices(2));
     }
     fclose(w);
-    printf("selftest: %u frames at %u Hz, voices now %u/%u/%u\n", total, FS, dock_voices(0), dock_voices(1),
-           dock_voices(2));
     return 0;
 }
 #endif

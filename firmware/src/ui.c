@@ -947,6 +947,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     if(t->eng_req==ENGI_PROPHET)p5_preset_loaded(t,pi);
     if(t->eng_req==ENGI_JUNO)juno_preset_loaded(t,pi);
     if(t->eng_req==ENGI_EP)ep_preset_loaded(t,pi);
+    if(t->eng_req==ENGI_WHEEL && WHEEL_PHYS_ON)wheel_preset_loaded(t,pi);   /* (Dock) the combo organs' vibrato */
     cz_factory_loaded(t);
     cz_track_accept(t);
     fm6_track_loaded(t);                              /* FM6: the preset's patch */

@@ -50,8 +50,8 @@ This file is the brief. Build from it; update it when a decision changes.
 | **PROPHET** | From Melodee | Basses, brass, leads |
 | **JUNO** | **New** | Pads, strings, silk leads, chorus I/II |
 | **EP** | **New** (built: FRodhes' physical Rhodes) | Rhodes (tine + magnetic pickup bark), Wurlitzer (reed + electrostatic pickup), tremolo |
-| **WHEEL** | From Felucca | Hammond + rotary; trimmed combo-organ registrations (Vox/Farfisa) |
-| **PLUCK** | From Felucca PHYS, trimmed | Upright-ish bass, surf/twang pluck |
+| **WHEEL** | From Felucca (built: back on) | Hammond + rotary; combo organs (Vox/Farfisa) from its registrations + vibrato |
+| **PLUCK** | From Felucca PHYS (built: back on, all four models) | Upright-ish bass, surf/twang pluck |
 | **DRUM** | Melodee's `eng_drum.c` to start (synthesised 808/909/SID); port Felucca's CR-78-style kits, congas and bells for the rhythm box (synthesised, no samples) | The rhythm box drummer (see §8b) |
 | FM6 | **Decision open — leaning cut** | DX piano / bells. Possible later "Glass Dock" add-on |
 | VOICE | **Cut** | — |
@@ -89,7 +89,7 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 
 Power-on default: **Yacht Dock**.
 
-**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Still to come per Line-up: the room (effects), voice split, macros, groove. Tempo, which SELECT set on Melodee's HOME, needs a new home.
+**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Still to come per Line-up: the room (effects), voice split, macros, groove. Tempo, which SELECT set on Melodee's HOME, needs a new home.
 
 ## 6. Controls (FM-1 panel)
 

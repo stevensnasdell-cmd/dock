@@ -3,7 +3,9 @@
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* PHYS: physical models. The DSP is ported to fixed point from DaisySP (Electrosmith, Emilie Gillet;
  * MIT: phys_dsp.c) and Rings' sympathetic strings (Emilie Gillet; MIT: phys_symp.c); this file is the
- * Melodee engine around them.
+ * Felucca engine around them (Leo Kuroshita, Felucca 1.0; MEMB is Felucca's too). Melodee moved its state into the
+ * part's engine block and retired it; Dock brings it back as its PLUCK (dock.h DOCK_ORGAN_PLUCK, core.h PHYS_NAME)
+ * with an upright bass and a surf twang, and HOME's knobs in DOCK.md's order.
  *
  * MODEL picks one of four (the values are stored: new ones are appended):
  *   MODAL   a bank of 12 band-pass modes (bells, bars, plates): STRC stretches the partials
@@ -185,6 +187,13 @@ static void phys_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     }
     case PM_STRING: {
         px_string_blk_t B;
+#if DOCK_ORGAN_PLUCK
+        {   /* (Dock) a dark string loses most of its burst to the low-pass: up to 4x (+12 dB) back as BRIT falls, so
+             * the upright sits with the band; a bright one barely changes */
+            int32_t nb = 65536 - brit;
+            g += px_m(px_m(nb, nb, 16), g * 3, 16);
+        }
+#endif
         px_string_block(&B, &S->u.s, f0, strc, brit, damp, acc, bow, pos * 516);   /* 0..1/2 period */
         px_string_excite(&B, &S->u.s, ax, n);
         px_string_run(&B, &S->u.s, ax, y, n);
@@ -227,10 +236,16 @@ static const preset_t PHYS_PRESETS[] = {
     /* SYMP: {MODEL, CHRD, BRIT, DAMP, SYMP, ACC, BUZZ, EXC} */
     {"DRONE STRING", {PM_SYMP, 127, 80, 88, 64, 100, 92, 0}, {0, 100, 127, 90}, 0, 0},
     {"HARP", {PM_SYMP, 8, 62, 74, 60, 90, 0, 0}, {0, 100, 127, 80}, 0, 0},
+    /* Dock's (appended: the stores and the Line-ups hold preset numbers). STRNG: {MODEL, STRC, BRIT, DAMP, POS, ACC,
+     * BOW, EXC} */
+    {"UPRIGHT", {PM_STRING, 34, 36, 6, 30, 60, 0, 80}, {0, 80, 127, 30}, 0, 0},    /* dark, short, a finger thump */
+    {"SURF TWANG", {PM_STRING, 33, 104, 106, 10, 100, 0, 8}, {0, 100, 127, 62}, 0, 0}, /* bright, near the bridge, rings */
 };
+#define PHYS_UPRIGHT 9u                                /* Hot's Bass (dock_lineups.c) */
+#define PHYS_SURF 10u                                  /* Hot's Lead */
 
 static const engine_t ENG_PHYS = {
-    .name = "PHYS",
+    .name = PHYS_NAME,
     .page_title = {"BODY", "EXCT"},
     .edit = {
         {"MODEL", F_ENUM, 0, PM_COUNT - 1, 0, N_PHYS_MODEL, 0},
@@ -246,7 +261,12 @@ static const engine_t ENG_PHYS = {
     .npresets = NELEM(PHYS_PRESETS),
     .note_on = phys_note_on,
     .render = phys_render,
+#if DOCK_BAND
+    .knob = {P_E2, P_E4, P_E3, P_E1},                  /* DOCK.md §6: brightness, pluck position, decay; STRC (verb
+                                                        * when the rooms come) */
+#else
     .knob = {P_E1, P_E2, P_E3, P_E4},
+#endif
     .poly = PHYS_POLY,
     .desc = phys_desc,
 };

@@ -26,6 +26,10 @@ static const char *const PRESET_CAT[NENGINES] = {
     [5] = "PLBF",                                       /* VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     [11] = "FFFF",                                      /* NOISE */
 #endif
+#if WHEEL_PHYS_ON
+    [ENGI_WHEEL] = "GGGGGGGGGG",                        /* WHEEL: organs */
+    [ENGI_PHYS] = "EEUEEDDUUBU",                        /* PHYS (Dock's PLUCK): ..., Dock's UPRIGHT, SURF TWANG */
+#endif
     [3] = "OLBBBBBBLLLLLLLLPSPPGGKKUUERFFFF",          /* SID */
     [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEO",                 /* FM6, INIT VOICE */

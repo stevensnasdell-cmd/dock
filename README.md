@@ -53,7 +53,9 @@ itself a modified version of **[Felucca](https://github.com/hugelton/Felucca)** 
 Hügelton Instruments. The emulator's panel page and its design follow Felucca's browser build, after
 charlesvestal's [X0X](https://github.com/charlesvestal/fm1-x0x). The EP engine's Rhodes is the physically modelled
 voice of **[FRodhes](https://github.com/leonardoMirabal/frodhes)** by Leonardo Mirabal (GPL-3.0), with its table
-generator. Full credits for engines, fonts and ported DSP are
+generator. The organ (WHEEL) and PLUCK (PHYS) engines are Felucca's, which Melodee had retired; PLUCK's string and
+resonators are ports of DaisySP (Electrosmith, Emilie Gillet) and Rings (Emilie Gillet), MIT. Full credits for engines,
+fonts and ported DSP are
 in [docs/MELODEE.md](docs/MELODEE.md#credits) and [LICENSING.md](LICENSING.md).
 
 Dock is not affiliated with or endorsed by Melodee, Felucca, FRodhes, Hügelton Instruments or M-VAVE. "Rhodes",

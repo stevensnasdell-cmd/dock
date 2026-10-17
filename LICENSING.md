@@ -59,7 +59,8 @@ Every file in this tree that carries an `SPDX-License-Identifier: GPL-3.0-only` 
 
 Three source files are ports and keep the licence of their originals: `firmware/src/phys_dsp.c`
 (DaisySP, MIT), `firmware/src/phys_symp.c` (Rings, MIT), and `firmware/src/cz_native.c`
-(MAME uPD933, BSD-3-Clause). `firmware/src/fm6_core.c` and
+(MAME uPD933, BSD-3-Clause). (Dock changes one constant in `phys_dsp.c`, the string's loop-filter compensation,
+under the same MIT licence: see its comment.) `firmware/src/fm6_core.c` and
 `firmware/src/eng_fm6.c` restate MSFA (Apache-2.0) and Dexed (GPL-3.0-or-later) in C with native fp32 signal arithmetic (below).
 The firmware built with them is GPL-3.0-only as a whole.
 

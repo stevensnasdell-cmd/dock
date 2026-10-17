@@ -11,6 +11,10 @@
 #ifndef DOCK_VOICES
 #define DOCK_VOICES DOCK_BAND     /* voices by member (voice.c): shares, and the drummer's own lane */
 #endif
+#ifndef DOCK_ORGAN_PLUCK
+#define DOCK_ORGAN_PLUCK DOCK_BAND /* WHEEL (the organ) and PHYS (PLUCK) back from Melodee's retired extras, without the
+                                    * others (PHASE, VOICE, TRIO, NOISE stay out): core.h WHEEL_PHYS_ON */
+#endif
 
 /* the parts, in order: MIDI channels 1..4 by default (G_ROUTE CH1-4) */
 enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };

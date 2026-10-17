@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Steven Snasdell */
 /* Dock's Line-ups (DOCK.md §5): each a sound for Bass, Keys, Lead and the drummer, from the engines there are today
- * (best guesses, to tune by ear; WHEEL and PLUCK will replace the stand-ins). SELECT on HOME steps through them in
- * this order and loads all four (ui_dock.c dock_lineup_turn). Power-on is the first, Yacht, as engines.c TRK_DEF.
+ * (best guesses, to tune by ear). SELECT on HOME steps through them in this order and loads all four (ui_dock.c dock_lineup_turn). Power-on is the first, Yacht, as engines.c TRK_DEF.
  * Still to come with them: each one's room (effects), voice split, macros and a drum groove. Included by ui_dock.c */
 typedef struct {
     const char *name;                                   /* as HOME's header shows it */
@@ -18,13 +17,13 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
                {ENGI_JUNO, 2},       /* STR MACHINE */
                {ENGI_JUNO, 5},       /* SQUARE LEAD */
                {ENGI_DRUM, 2}}},     /* SID KIT: dry, machine */
-    {"Hot", {{ENGI_PROPHET, 86},     /* Uptight Bass (the upright's stand-in) */
+    {"Hot", {{ENGI_PHYS, PHYS_UPRIGHT}, /* PLUCK UPRIGHT: short and woody */
              {ENGI_EP, EP_WURLY},    /* WURLY: mono tremolo */
-             {ENGI_CZ, 11},          /* ELEC.GUITAR: surf twang */
+             {ENGI_PHYS, PHYS_SURF}, /* PLUCK SURF TWANG */
              {ENGI_DRUM, 0}}},       /* 808 KIT (brushes to come) */
     {"Mod", {{ENGI_CZ, 15},          /* ELEC.BASS 2: round, Motown */
-             {ENGI_PROPHET, 145},    /* Leslied: organ and rotary */
-             {ENGI_JUNO, 8},         /* GATE ORGAN: the combo organ's stand-in */
+             {ENGI_WHEEL, WHEEL_MOD_HAMMOND}, /* MOD HAMMOND: drawbars, rotary, drive */
+             {ENGI_WHEEL, WHEEL_VOX}, /* VOX COMBO: the combo organ */
              {ENGI_DRUM, 1}}},       /* 909 KIT: a bright snare */
     {"Goth", {{ENGI_JUNO, 6},        /* JUNO BASS: chorused */
               {ENGI_JUNO, 3},        /* STRING WASH */

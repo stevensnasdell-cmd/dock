@@ -125,6 +125,7 @@ static void host_preset_values(track_t *t, uint32_t e, uint32_t pi, const preset
     fm6_track_loaded(t);                          /* FM6: the preset's patch (ui.c apply_preset_to) */
     if(e==ENGI_JUNO)juno_preset_loaded(t,pi);    /* (Dock) JUNO: its LFO, key tracking, glide, drift */
     if(e==ENGI_EP)ep_preset_loaded(t,pi);        /* (Dock) EP: the TREM's LFO */
+    if(e==ENGI_WHEEL && WHEEL_PHYS_ON)wheel_preset_loaded(t,pi);   /* (Dock) WHEEL: the combo organs' vibrato */
 }
 static void host_preset_req(track_t *t, uint32_t e, uint32_t pi)
 {

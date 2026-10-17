@@ -52,9 +52,9 @@ static uint32_t eng_state_size(uint32_t e)
     case 0: return sizeof(p5_part_t);
 #endif
 #endif
-#if MELODEE_LEGACY_EXTRAS
-    case ENGI_PHYS: return sizeof(phys_slot_t) * PHYS_POLY;
-    case 7: return sizeof(drw_part_t);
+#if WHEEL_PHYS_ON
+    case ENGI_PHYS: return sizeof(phys_slot_t) * PHYS_POLY;   /* PHYS (Dock's PLUCK): 12.6 KiB, the largest; never the drummer's */
+    case ENGI_WHEEL: return sizeof(drw_part_t);       /* WHEEL (Dock's organ) */
 #endif
 #if MELODEE_LEGACY_EXTRAS
     case 2:                                         /* (PHASE: CZ-1's core) */
@@ -123,14 +123,14 @@ static const engine_t *const ENGINES[NENGINES] = {
 #else
     &ENG_RETIRED,                /* 6: retired TRIO; stored ID reserved */
 #endif
-#if MELODEE_LEGACY_EXTRAS
-    &ENG_WHEEL,
+#if WHEEL_PHYS_ON
+    &ENG_WHEEL,                  /* 7 (ENGI_WHEEL): Dock's organ */
 #else
     &ENG_RETIRED,                /* 7: retired WHEEL; stored ID reserved */
 #endif
     &ENG_EP,                     /* 8 (ENGI_EP): Dock's EP; was the GRAIN retired in Melodee */
-#if MELODEE_LEGACY_EXTRAS
-    &ENG_PHYS,
+#if WHEEL_PHYS_ON
+    &ENG_PHYS,                   /* 9 (ENGI_PHYS): Dock's PLUCK */
 #else
     &ENG_RETIRED,                /* 9: retired PHYS; stored ID reserved */
 #endif
@@ -185,6 +185,9 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     6, 7, 9,
     11,                          /* NOISE */
 #else
+#if DOCK_ORGAN_PLUCK
+    ENGI_WHEEL, ENGI_PHYS,       /* Dock's organ and PLUCK */
+#endif
     ENGI_CZ, 3,                   /* CZ-1 SID */
 #endif
 #if MELODEE_SLICE
@@ -200,7 +203,8 @@ static int eng_extra_retired(uint32_t e)
 #if !MELODEE_PROPHET_PROTOTYPE
     if (e == ENGI_ANALOG) return 1;
 #endif
-    return e == ENGI_DIGITAL || (!MELODEE_LEGACY_EXTRAS && (e == 2u || e == 5u || e == 6u || e == 7u || e == 9u || e == 11u));
+    return e == ENGI_DIGITAL || (!MELODEE_LEGACY_EXTRAS && (e == 2u || e == 5u || e == 6u || e == 11u)) ||
+           (!WHEEL_PHYS_ON && (e == 7u || e == 9u));
 }
 /* the engines one can pick, in ENGINE_ORDER: eng_ok(e), the n-th of them
  * eng_vis(n), e's place among them eng_rank(e), the next / previous one eng_step(e, dir) (wraps) */

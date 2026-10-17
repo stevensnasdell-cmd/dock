@@ -6,8 +6,8 @@ int main(void)
 {
     int bad=0; reset(); up_boot();
     bad+=check("engine and native collection IDs remain unchanged",NENGINES==20 && USER_GENERAL==16 && USER_NATIVE_FM==17 && USER_NATIVE_CZ==18 && ENGI_PROPHET==19 && USER_NATIVE_P5==20);
-    const uint8_t retired[]={2,5,6,7,9,11};
-    for(uint32_t j=0;j<NELEM(retired);j++) {
+    const uint8_t retired[]={2,5,6,11,7,9};            /* (Dock: WHEEL 7 and PHYS 9 back, core.h WHEEL_PHYS_ON) */
+    for(uint32_t j=0;j<NELEM(retired)-2u*WHEEL_PHYS_ON;j++) {
         uint32_t e=retired[j];
         bad+=check("retired engine absent from browser and DSP resources",!eng_ok(e) && !ENGINES[e]->npresets && !eng_state_size(e));
         favorite_set(e,3,1);

@@ -59,17 +59,20 @@ static int audio_tests(void)
         eng_state_clear(k);trk[k].engine=(uint8_t)e;
         if(!eng_state_prepare(&trk[k])){bad+=check("engine switching does not fragment away capacity",0);break;}
     }
-    uint32_t largest=0, largest_engine=0;
-    for(uint32_t j=0;j<NENG_SHOWN;j++) {
-        uint32_t e=eng_vis(j), size=eng_state_size(e);
-        if(size>largest){largest=size;largest_engine=e;}
+    uint32_t largest[NPART]={0}, largest_engine[NPART]={0}, maximum=0;   /* (Dock: each part's own, DOCK_ENGINE_OK) */
+    for(uint32_t k=0;k<NPART;k++){
+        for(uint32_t j=0;j<NENG_SHOWN;j++) {
+            uint32_t e=eng_vis(j), size=eng_state_size(e);
+            if(e==ENGI_DRUM){uint32_t a=sizeof(drum909_part_t),b=dsk_bytes(),c=sizeof(drum_lane_t)*DV_NLANE;size=a>b?(a>c?a:c):(b>c?b:c);}
+            if(DOCK_ENGINE_OK(k,e) && size>largest[k]){largest[k]=size;largest_engine[k]=e;}
+        }
+        maximum+=largest[k];
     }
-    uint32_t maximum=largest*NPART;
     for(uint32_t k=0;k<4u;k++){
-        eng_state_clear(k);trk[k].engine=(uint8_t)largest_engine;eng_state_prepare(&trk[k]);
+        eng_state_clear(k);trk[k].engine=(uint8_t)largest_engine[k];resource_get(RES_ENGINE0+k,largest[k]);   /* (a kit's: its largest) */
     }
     bad+=check("four maximum engine states fit without effect buffers",resource_used()==maximum && maximum<=48u*1024u);
-    bad+=check("capacity exhaustion returns failure and preserves live memory",resource_get(RES_ENGINE0,RESOURCE_CAPACITY+4u)==0 && resource[RES_ENGINE0].size==largest);
+    bad+=check("capacity exhaustion returns failure and preserves live memory",resource_get(RES_ENGINE0,RESOURCE_CAPACITY+4u)==0 && resource[RES_ENGINE0].size==largest[0]);
     bad+=check("zero-byte requests release rather than return an arena pointer",!resource_get(RES_ENGINE0,0) && !resource[RES_ENGINE0].size);
     printf("resources: default engine bytes %u, worst audio bytes %u, host arena %u\n",expected,maximum,RESOURCE_CAPACITY);
     return bad;

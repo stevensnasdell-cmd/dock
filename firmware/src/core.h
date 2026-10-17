@@ -46,6 +46,8 @@
 #define MELODEE_LEGACY_EXTRAS 0 /* reference tests only: retired TRIO, WHEEL and PHYS; PHASE, VOICE and NOISE (retired
                                  * 2026-10-10: the flash for the redesign; CZ-1 keeps PHASE's phase-distortion core) */
 #endif
+#define WHEEL_PHYS_ON (MELODEE_LEGACY_EXTRAS || DOCK_ORGAN_PLUCK)   /* WHEEL (7) and PHYS (9) can be picked: Dock's organ
+                                                                    * and PLUCK (dock.h), or all the extras */
 #define MELODEE_PROPHET 1
 #define ENGI_FM6 12u
 #define ENGI_JUNO 14u /* Dock's JUNO (eng_juno.c) in retired OBXF's stored ID: 16..18 are user preset namespaces */
@@ -59,7 +61,7 @@
 #define USER_NONE 65535u
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
-#define NENG_SHOWN (NENGINES - 6u - !MELODEE_SLICE - 6u * !MELODEE_LEGACY_EXTRAS)   /* the engines one can pick: PRESETS, the EDIT
+#define NENG_SHOWN (NENGINES - 6u - !MELODEE_SLICE - 6u * !MELODEE_LEGACY_EXTRAS + 2u * (!MELODEE_LEGACY_EXTRAS && DOCK_ORGAN_PLUCK)) /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS
@@ -192,7 +194,9 @@ static void params_by_count(int16_t *out, const int16_t *in, uint32_t np, const 
 }
 
 /* engine indices the stores name (engines.c ENGINES[]: append-only) */
-#define ENGI_PHYS 9u
+#define ENGI_WHEEL 7u              /* (Dock's organ) */
+#define ENGI_PHYS 9u               /* (Dock's PLUCK) */
+#define PHYS_NAME (DOCK_ORGAN_PLUCK ? "PLUCK" : "PHYS")   /* Dock names PHYS by what it plays (DOCK.md §4) */
 #define ENGI_DRUM 10u
 /* PHYS MODEL DRUM (MODEL 4, before 1.0) -> the DRUM engine, its E values in place: {MODEL, TUNE, TONE, DECY,
  * SNAP, ACC, KICK 0..127, PERC 0..127} -> {KIT, TUNE, TONE, DECY, SNAP, ACC, KICK 0..1, DRV 0}. 1 = it was one
