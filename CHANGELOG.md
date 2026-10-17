@@ -129,6 +129,9 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Sounds picked by ear:** Kraut's bass Rubber Bumper (a rubbery filter snap), Mod's bass CZ Elec. Bass 1 (a fingered
+  electric), Goth's bass Sticky Plucks (high and picked), Goth's lead Faint Memories (glassy). Shortlisted by
+  measurement (tuning, filter snap, sustain), chosen by ear; trims keep them level with the band.
 - **Yacht's bass** is now PROPHET Feature My Bass: Funk Bass II (Melodee's default) is a detuned, synced program,
   ~65 cents sharp by design, which sounded out of tune and chiptune-like against the Rhodes. The balance test also
   checks every melodic Line-up sound is in tune (within 25 cents; all are within 8).

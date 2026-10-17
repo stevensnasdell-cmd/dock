@@ -31,7 +31,7 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
      /* warm plate: a short dense tank, its top rolled off; the Lead's own delay (300 ms: an eighth at 100 BPM) */
      {1, 100, {{FX_REVERB, 127, 48, 66, -12}, {FX_ECHO, 127, DOCK_ECHO_MS(300), 55, -20}, {0}},
       {{10, 0, 0}, {50, 0, 0}, {40, 45, 0}, {22, 0, 0}}}},
-    {"Kraut", {{ENGI_PROPHET, 21},   /* Bass Face: a squelchy mono */
+    {"Kraut", {{ENGI_PROPHET, 107},  /* Rubber Bumper: a rubbery filter snap (picked by ear, 2026-10-17) */
                {ENGI_JUNO, 2},       /* STR MACHINE */
                {ENGI_JUNO, 5},       /* SQUARE LEAD */
                {ENGI_DRUM, 2}},      /* SID KIT: dry, machine */
@@ -45,7 +45,7 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
      /* spring + slapback: SPRING (fx.c, after Felucca's), a single 110 ms repeat; the twang soaks in both */
      {1, 100, {{FX_SPRING, 127, 40, 112, 0}, {FX_ECHO, 127, DOCK_ECHO_MS(110), 0, -8}, {0}},
       {{18, 16, 0}, {50, 25, 0}, {72, 55, 0}, {26, 0, 0}}}},
-    {"Mod", {{ENGI_CZ, 15},          /* ELEC.BASS 2: round, Motown */
+    {"Mod", {{ENGI_CZ, 14},          /* ELEC.BASS 1: a fingered electric, Motown (picked by ear) */
              {ENGI_WHEEL, WHEEL_MOD_HAMMOND}, /* MOD HAMMOND: drawbars, rotary, drive */
              {ENGI_WHEEL, WHEEL_VOX}, /* VOX COMBO: the combo organ */
              {ENGI_DRUM, 1}},        /* 909 KIT: a bright snare */
@@ -53,9 +53,9 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
       * tail hid), sent hard (the grit: the organ's own DRV) */
      {1, 100, {{FX_REVERB, 127, 8, 44, 6}, {0}, {0}},
       {{18, 0, 0}, {62, 0, 0}, {56, 0, 0}, {52, 0, 0}}}},
-    {"Goth", {{ENGI_JUNO, 6},        /* JUNO BASS: chorused */
+    {"Goth", {{ENGI_PROPHET, 19},    /* Sticky Plucks: a high, picked bass (picked by ear) */
               {ENGI_JUNO, 3},        /* STRING WASH */
-              {ENGI_JUNO, 9},        /* GLASS LEAD */
+              {ENGI_PROPHET, 127},   /* Faint Memories: glassy, soft (picked by ear) */
               {ENGI_DRUM, 3}},       /* SID DIGI: a drum machine */
      /* huge wash (shimmer-ish): REVERB at full size and depth (its lines drift), a long delay, and a deep slow
       * CHORUS send that widens the Bass and the Lead (no pitch-shifted shimmer: that needs another buffer) */

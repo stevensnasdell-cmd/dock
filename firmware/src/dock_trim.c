@@ -24,6 +24,8 @@ static const dock_trim_t DOCK_TRIMS[] = {
     {ENGI_JUNO, 6, 10289},                   /* JUNO BASS: +8.0 dB (measured -32.2 in its role) */
     {ENGI_JUNO, 9, 8173},                    /* GLASS LEAD: +6.0 dB (measured -32.0 in its role) */
     {ENGI_DRUM, 3, 8657},                    /* SID DIGI: +6.5 dB (measured -31.4 in its role) */
+    {ENGI_PROPHET, 107, 6492},               /* Rubber Bumper: +4.0 dB (measured -28.1 as Kraut's bass) */
+    {ENGI_PROPHET, 19, 7715},                /* Sticky Plucks: +5.5 dB (measured -29.3 as Goth's bass) */
 };
 
 static uint32_t dock_trim_q12(const track_t *t)
