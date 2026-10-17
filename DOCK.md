@@ -83,6 +83,8 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 
 Power-on default: **Yacht Dock**.
 
+**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Still to come per Line-up: the room (effects), voice split, macros, groove. Tempo, which SELECT set on Melodee's HOME, needs a new home.
+
 ## 6. Controls (FM-1 panel)
 
 Navigation follows Baud Girl's principles (concept only): **SELECT picks a parameter, ALGORITHM changes it, SEL opens, HOME backs out.**
@@ -91,8 +93,8 @@ Navigation follows Baud Girl's principles (concept only): **SELECT picks a param
 |---|---|
 | **Black keys 1–3** (or held button + key) | Focus Bass / Keys / Lead |
 | **PRESETS** | Browse sounds for the focused member |
-| **SELECT** | Pick parameter; press toggles knobs PART ↔ BAND |
-| **ALGORITHM** | Change the picked parameter; on HOME, change Line-up |
+| **SELECT** | Pick parameter; press toggles knobs PART ↔ BAND; **on HOME, turn = change Line-up** |
+| **ALGORITHM** | Change the picked parameter (on HOME: pick the member, as now) |
 | **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value |
 | **MASTER** | Volume |
 | **HOME** | Stage view; hold = menu (channels, voice split, clock, theme) |

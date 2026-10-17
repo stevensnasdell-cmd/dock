@@ -60,6 +60,9 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Line-ups:** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's Bass, Keys, Lead and drum
+  kit (first guesses from today's engines, `firmware/src/dock_lineups.c`). HOME's header names the Line-up and a strip
+  shows it ("LINE-UP KRAUT 2 / 5") while SELECT turns. Tempo no longer sits on SELECT; it needs a new place.
 - **Sounds by part:** Bass, Keys and Lead browse one and the same list (every engine but the drums, 333 sounds), in
   the same order; the drummer (part 4) browses drum kits only. KNOB 4's engine jump keeps to the same rule. Checked in
   `tests/dock_ui_test.c`.

@@ -2436,7 +2436,11 @@ static void ui_input(void)
                                                          * KNOB 1) */
             page_scroll(s);
         } else {                                        /* HOME: what the menu's HOME SELECT says */
+#if DOCK_BAND
+            dock_lineup_turn(s);                        /* Dock: the Line-ups (tempo finds another place later) */
+#else
             select_turn(home_select(), s);
+#endif
         }
     }
     for (k = 0; !knob_layer && k < 4u; k++) {

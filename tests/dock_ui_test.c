@@ -75,6 +75,33 @@ int main(void)
         printf("dock ui:   (the band's list: %u sounds; the drummer's: %u)\n", tot[0], tot[DOCK_DRUMS]);
     }
 
+    {   /* the Line-ups: Yacht at power-on; SELECT on HOME steps through them, each loading its four sounds */
+        uint32_t i, k, same = 1, loads = 1, rules = 1, mono = 1;
+        for (k = 0; k < NPART; k++)
+            same &= DOCK_LINEUPS[0].snd[k][0] == TRK_DEF[k][0] && DOCK_LINEUPS[0].snd[k][1] == TRK_DEF[k][1];
+        dcheck("Yacht is the power-on line-up (TRK_DEF)", same);
+        for (i = 0; i < DOCK_NLINEUPS; i++)
+            for (k = 0; k < NPART; k++)
+                rules &= DOCK_ENGINE_OK(k, DOCK_LINEUPS[i].snd[k][0]) != 0 &&
+                         DOCK_LINEUPS[i].snd[k][1] < ENGINES[DOCK_LINEUPS[i].snd[k][0]]->npresets;
+        dcheck("every line-up: drums on the drummer only, real presets", rules);
+        ui_power_on();
+        frame();
+        for (i = 1; i <= DOCK_NLINEUPS; i++) {
+            dock_lineup_turn(1);
+            frame();
+            for (k = 0; k < NPART; k++)
+                loads &= trk[k].eng_req == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][0] &&
+                         trk[k].preset == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][1];
+            mono &= trk[DOCK_BASS].p[P_VOICE] == V_LEGATO && trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO;
+        }
+        dcheck("SELECT steps through all five, each loading its four sounds", loads && dock_lineup == 0u);
+        dock_lineup_turn(-1);
+        dcheck("  and back round from Yacht to Goth", dock_lineup == DOCK_NLINEUPS - 1u &&
+                                                     trk[DOCK_KEYS].eng_req == DOCK_LINEUPS[DOCK_NLINEUPS - 1u].snd[1][0]);
+        dcheck("Bass and Lead stay mono legato in every line-up", mono);
+    }
+
     printf(fails ? "dock ui: %d FAILED\n" : "dock ui: all passed\n", fails);
     return fails != 0;
 }

@@ -5,6 +5,7 @@
  * selected member's four; Tone / Bite / Shape / Space once the macros exist), a row per part (its badge, its sound, a
  * five-step meter of what it plays) and the band's eight voices coloured by owner. Each zone remembers what it drew
  * and redraws only when that changes; the meters every other frame. Built on Melodee's canvas (gfx.c) and grid (ui.c). */
+#include "dock_lineups.c"                               /* the Line-ups: SELECT on HOME (dock_lineup_turn) */
 #define DK_ROW_Y 84                                     /* the rows: 84 + 32 k, 30 tall */
 #define DK_ROW_H 30
 #define DK_ROW_DY 32
@@ -15,6 +16,7 @@
 static struct {
     uint32_t head, cell[4], row[NPART], vox, strip;
     uint32_t snd, browse_ms;                            /* the selected member's sound; when it last changed (| 1) */
+    uint32_t lineup_ms;                                 /* when SELECT last changed the Line-up (| 1) */
     uint8_t meter[NPART];
 } dk;
 
@@ -60,14 +62,14 @@ static void dk_head(void)
         return;
     }
     fmt_int(b, song.g[G_BPM]);
-    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u, b) + ux.gen * 977u + ux.pal * 31u;
+    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u + dock_lineup * 8u, b) + ux.gen * 977u + ux.pal * 31u;
     if (!ui.force && sig == dk.head)
         return;
     dk.head = sig;
     ui.head_sig = 0;                                    /* (Melodee's header draws itself whole when it comes back) */
     cv_begin(240, H_HEAD, T_BG);
     x = cv_text_on(8, ty_y(H_HEAD / 2, TY_WM), TY_WM, "DOCK", T_TEXT, T_BG);
-    cv_free_text(x + 8, ty_y(H_HEAD / 2, TY_TX), TY_TX, "Yacht", T_MID, T_BG, 80);   /* (the Line-up: one for now) */
+    cv_free_text(x + 8, ty_y(H_HEAD / 2, TY_TX), TY_TX, DOCK_LINEUPS[dock_lineup].name, T_MID, T_BG, 80);
     cv_disc(172, H_HEAD / 2, 8, T_TEXT, !ext);
     cv_text_on(232 - text_w(TY_MB, b), ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG);
     cv_blit(0, Y_HEAD);
@@ -272,18 +274,58 @@ static void dk_browse_strip(void)
     cv_blit(BOX_X, Y_LABEL);
 }
 
+/* SELECT on HOME: the next or previous Line-up, all four sounds at once */
+static void dock_lineup_turn(int32_t s)
+{
+    int32_t n = (int32_t)DOCK_NLINEUPS;
+    dock_lineup_load((uint32_t)((((int32_t)dock_lineup + s) % n + n) % n));
+    dk.lineup_ms = fm1_ms | 1u;
+}
+
+/* the Line-up strip, in the knob strip's place DK_BROWSE_MS after SELECT turns: LINE-UP, its name in the wordmark's
+ * face, its place among them */
+static void dk_lineup_strip(void)
+{
+    char nm[12], where[8];
+    uint32_t i, sig;
+    for (i = 0; DOCK_LINEUPS[dock_lineup].name[i] && i + 1u < sizeof nm; i++) {
+        char c = DOCK_LINEUPS[dock_lineup].name[i];
+        nm[i] = c >= 'a' && c <= 'z' ? (char)(c - 32) : c;   /* (the wordmark's face: capitals) */
+    }
+    nm[i] = 0;
+    fmt_int(where, (int32_t)dock_lineup + 1);
+    str_cpy(where + str_len(where), " / ", 4);
+    fmt_int(where + str_len(where), (int32_t)DOCK_NLINEUPS);
+    sig = str_hash(7u, nm) + ux.gen * 977u + ux.pal * 31u;
+    if (!ui.force && sig == dk.strip)
+        return;
+    dk.strip = sig;
+    memset(dk.cell, 0, sizeof dk.cell);
+    cv_begin(BOX_W, CARD_H, T_BG);
+    cv_rrect(0, 0, BOX_W, CARD_H, 8, T_SURF, T_BG);
+    cv_text_on(10, ty_y(15, TY_LB), TY_LB, "LINE-UP", T_MID, T_SURF);
+    cv_text_on(10, ty_y(34, TY_WM), TY_WM, nm, T_TEXT, T_SURF);
+    cv_text_on(BOX_W - 10 - text_w(TY_MN, where), ty_y(34, TY_MN), TY_MN, where, T_MID, T_SURF);
+    cv_blit(BOX_X, Y_LABEL);
+}
+
 static void dock_home_draw(void)
 {
     uint32_t k;
     if (ui.force) {                                     /* (all drawn again; what the sound was and when it changed kept:
                                                          * a load forces a redraw) */
-        uint32_t snd = dk.snd, bms = dk.browse_ms;
+        uint32_t snd = dk.snd, bms = dk.browse_ms, lms = dk.lineup_ms;
         memset(&dk, 0, sizeof dk);
         dk.snd = snd;
         dk.browse_ms = bms;
+        dk.lineup_ms = lms;
     }
     dk_head();
-    if (dk_browsing())
+    if (dk.lineup_ms && fm1_ms - (dk.lineup_ms & ~1u) < DK_BROWSE_MS) {
+        dk_browsing();                                  /* (the sounds it loaded: not a browse of their own) */
+        dk.browse_ms = 0;
+        dk_lineup_strip();
+    } else if (dk_browsing())
         dk_browse_strip();
     else {
         if (dk.strip)                                   /* (the strip's gone: the gaps between the cells too) */
