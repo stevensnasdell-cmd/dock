@@ -332,9 +332,25 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
 }
 
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. */
+#if DOCK_BAND
+/* Program Change (DOCK.md §3): on a member's channel it picks entry bank * 128 + program of that member's list (the
+ * one PRESETS walks, ALL). Here, in the audio interrupt, it is only noted; the UI loop loads it (ui.c dock_programs).
+ * Copyright (C) 2026 Steven Snasdell */
+static uint8_t dock_bank[16];                           /* Bank Select MSB (CC 0) by channel */
+static volatile uint16_t dock_pc_req[NTRK];             /* a part's waiting Program Change: its entry + 1, 0 none */
+#endif
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
     track_t *t = midi_track(ch);
+#if DOCK_BAND
+    if (st == 0xC0u) {
+        if (t)
+            dock_pc_req[t - trk] = (uint16_t)(dock_bank[ch & 15u] * 128u + d1 + 1u);
+        return;
+    }
+    if (st == 0xB0u && d1 == 0u)
+        dock_bank[ch & 15u] = (uint8_t)d2;
+#endif
     /* Controllers retain channel state even outside ROUT, but only mapped/owned tracks receive them.
      * In particular, pedal-up must clear sustain even if the channel currently owns no notes. */
     if (st == 0x90u || st == 0x80u)

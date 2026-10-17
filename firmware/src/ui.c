@@ -1044,6 +1044,42 @@ static void preset_go(uint32_t n)                    /* load list index n into t
     preset_hinted();
 }
 
+#if DOCK_BAND
+/* the Program Changes waiting (midi_control.c dock_pc_req): each part's entry of ALL, loaded as PRESETS would; past the
+ * end of the list: nothing. The list (and a user preset's load) are the selected track's, so song.sel points at the
+ * part for those moments. Copyright (C) 2026 Steven Snasdell */
+static void dock_programs(void)
+{
+    uint32_t p;
+    for (p = 0; p < NTRK; p++) {
+        uint32_t req = dock_pc_req[p], n, total, src, k, as, ak;
+        uint8_t sel = song.sel;
+        track_t *t = &trk[p];
+        if (!req)
+            continue;
+        dock_pc_req[p] = 0;
+        n = req - 1u;
+        song.sel = (uint8_t)p;
+        list_scan(LM_ALL, 0xFFFFFFFFu, 0, n, &as, &ak, &total);
+        src = as;
+        k = ak;
+        if (n < total) {
+            if (src == USER_NATIVE_P5 || src == USER_NATIVE_FM || src == USER_NATIVE_CZ)
+                native_load(src == USER_NATIVE_P5 ? ENGI_PROPHET : src == USER_NATIVE_FM ? ENGI_FM6 : ENGI_CZ, k, p);
+            else if (src == USER_GENERAL)
+                up_load(k);
+            else {
+                if (src != t->eng_req)
+                    set_engine_of(t, src);
+                apply_preset_to(t, k);
+            }
+            ui.force = 1;
+        }
+        song.sel = sel;
+    }
+}
+#endif
+
 /* The selected track's engine only: its factory presets, then the used user presets
  * made with it (slot order). List index of the current sound; *total the length */
 

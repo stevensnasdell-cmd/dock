@@ -300,6 +300,30 @@ int main(int argc, char **argv)
         if (!shown || !gone)
             return 1;
     }
+    {   /* Program Change: a member's channel picks entry bank * 128 + program of its list; past the end, nothing */
+        uint32_t src, kk, total, ok = 1;
+        uint8_t sel = song.sel;
+        song.sel = DOCK_LEAD;
+        list_scan(LM_ALL, 0xFFFFFFFFu, 0, 140u, &src, &kk, &total);   /* (the Lead's entry 140: bank 1, program 12) */
+        song.sel = sel;
+        web_midi(0xC2, 0, 0);                           /* ch 3, program 0: the Lead's first sound */
+        run_ms(100);
+        ok &= trk[DOCK_LEAD].eng_req == ENGI_PROPHET && trk[DOCK_LEAD].preset == 0u;
+        web_midi(0xB2, 0, 1);                           /* bank 1 */
+        web_midi(0xC2, 12, 0);                          /* program 12: entry 140 */
+        run_ms(100);
+        ok &= trk[DOCK_LEAD].eng_req == src_engine(src, kk) && (src >= NENGINES || trk[DOCK_LEAD].preset == kk);
+        web_midi(0xC3, 1, 0);                           /* ch 4, the drummer, program 1: its second kit */
+        run_ms(100);
+        ok &= trk[DOCK_DRUMS].eng_req == ENGI_DRUM && trk[DOCK_DRUMS].preset == 1u;
+        web_midi(0xB3, 0, 5);                           /* far past the drummer's four kits: nothing changes */
+        web_midi(0xC3, 9, 0);
+        run_ms(100);
+        ok &= trk[DOCK_DRUMS].preset == 1u;
+        printf("selftest: Program Change and Bank Select pick each member's sound (%s)\n", ok ? "ok" : "FAILED");
+        if (!ok)
+            return 1;
+    }
     {   /* MASTER all the way down and up: the volume stays within the pot's range (no wrap) */
         int32_t qmax = 0;
         for (k = 0; k <= 1023u; k += 31u) {

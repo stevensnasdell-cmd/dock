@@ -1971,6 +1971,9 @@ static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     dq_poll();                                          /* (destructive edits waiting for their loop end) */
+#if DOCK_BAND
+    dock_programs();                                    /* (Program Changes from MIDI: the sounds they pick) */
+#endif
     if (boot_work.state) {
         for (k = 0; k < NE; k++) (void)panel_enc(k);
         panel_moved = 0;
