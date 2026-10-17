@@ -103,6 +103,9 @@ typedef struct {
     int32_t lvl, gl, gr;
 } mix_cache_t;
 static mix_cache_t mix_cache[NTRK];
+#if DOCK_BAND
+#include "dock_trim.c"                                  /* Dock: factory sounds' loudness trims (before LEVEL) */
+#endif
 static __attribute__((noinline)) void mix_cache_update(const track_t *t, mix_cache_t *mc)
 {
     mc->level=t->p[P_LEVEL];mc->pan=t->p[P_PAN];mc->valid=1;
@@ -221,6 +224,9 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
     }
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk))){for(uint32_t i=0;i<n;i++)part_buf[i]=((i&8u)?-8000:8000)+(int32_t)i*97;rendered=1;spread_on=0;}
+#endif
+#if DOCK_BAND
+    if(rendered)dock_trim(t,part_buf,spread_buf,n,spread_on);
 #endif
     AP_START(mix_start);
     if(rendered || fx_active(t)){

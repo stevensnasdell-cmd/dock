@@ -129,6 +129,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Balance:** the Line-ups' sounds were up to 23 dB apart (the Rhodes, the upright and the SID kits far too quiet).
+  `firmware/src/dock_trim.c` trims each measured factory sound to its role's loudness (Bass -24, Keys -27, Lead -26,
+  Drums -25 dB RMS alone) before its LEVEL, so the MIXER (tap GLO; ALGORITHM picks the member, KNOB 1 its level)
+  still balances on top. `tests/dock_level_test.c` measures every Line-up sound.
 - **Line-ups:** Mod's Keys are WHEEL MOD HAMMOND and its Lead VOX COMBO (were PROPHET Leslied, JUNO GATE ORGAN);
   Hot's Bass is PLUCK UPRIGHT and its Lead SURF TWANG (were PROPHET Uptight Bass, CZ ELEC.GUITAR).
 - **Line-ups:** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's Bass, Keys, Lead and drum
