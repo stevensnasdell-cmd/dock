@@ -18,6 +18,7 @@
 #include "eng_drum.c"           /* DRUM: synthesized 808 circuits (drum_808.c), the 909, a C64's SID (drum_sid.c) */
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM rendered as Dexed renders it (fm6_core.c) */
+#include "eng_juno.c"           /* JUNO: Dock's Juno-60-style voice and chorus */
 #if MELODEE_SLICE
 #include "eng_slice.c"
 #else
@@ -61,6 +62,7 @@ static uint32_t eng_state_size(uint32_t e)
     case 3: return sizeof(sid_part_t);              /* SID (eng_sid.c) */
     case ENGI_DRUM: return sizeof(drum909_part_t);
     case ENGI_FM6: return sizeof(fm6_part_t);
+    case ENGI_JUNO: return sizeof(juno_part_t);
 #if MELODEE_SLICE
     case ENGI_SLICE: return sizeof(slc_rb_t);
 #endif
@@ -85,6 +87,7 @@ static drw_part_t *drw_of(const track_t *t) { return resource_get(RES_ENGINE0 + 
 static fm6_part_t *fm6_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(fm6_part_t)); }
 static cz_part_t *cz_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(cz_part_t)); }
 static sid_part_t *sid_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(sid_part_t)); }
+static juno_part_t *juno_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(juno_part_t)); }
 #if MELODEE_PROPHET
 static p5_part_t *p5_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(p5_part_t)); }
 #endif
@@ -140,7 +143,7 @@ static const engine_t *const ENGINES[NENGINES] = {
 #else
     &ENG_RETIRED,             /* 13: reserved (MELODEE_SLICE=0 builds without SLICE) */
 #endif
-    &ENG_RETIRED,                /* 14: retired OBXF; stored index reserved */
+    &ENG_JUNO,                   /* 14 (ENGI_JUNO): Dock's JUNO; was the OBXF retired in Melodee 0.11 */
     &ENG_CZ,                     /* 15: native Casio CZ-1 */
     &ENG_RETIRED, &ENG_RETIRED, &ENG_RETIRED, /* 16..18 reserved */
     &ENG_P5_TEST,                /* 19: Prophet (ANALOG's ID 0 stays reserved) */
@@ -172,6 +175,7 @@ static const preset_t *eng_preset(const engine_t *e, uint32_t k)
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_PROPHET,                /* Prophet replaces ANALOG in new-sound browsing */
     12,                          /* FM6 */
+    ENGI_JUNO,                   /* Dock's JUNO */
 #if MELODEE_LEGACY_EXTRAS
     2, ENGI_CZ, 3, 5,             /* PHASE CZ-1 SID VOICE */
     6, 7, 9,
@@ -198,7 +202,7 @@ static int eng_extra_retired(uint32_t e)
  * eng_vis(n), e's place among them eng_rank(e), the next / previous one eng_step(e, dir) (wraps) */
 static int eng_ok(uint32_t e)
 {
-    return e < NENGINES && !(e >= 16u && e <= 18u) && !eng_extra_retired(e) && e != 4u && e != 8u && e != 14u && (MELODEE_SLICE || e != ENGI_SLICE);
+    return e < NENGINES && !(e >= 16u && e <= 18u) && !eng_extra_retired(e) && e != 4u && e != 8u && (MELODEE_SLICE || e != ENGI_SLICE);
 }
 static uint32_t eng_sound_idx(uint32_t e)
 {
@@ -220,8 +224,8 @@ static uint32_t eng_step(uint32_t e, int32_t dir)
 }
 
 /* the parts at power-on (engine, preset; the steps empty): bass, pad, lead, drums */
-#if DOCK_BAND   /* Dock's Yacht stand-ins until JUNO and EP exist: Funk Bass II, TINE EP, Nice n Smooth, 808 KIT */
-static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 4}, {ENGI_FM6, 0}, {ENGI_PROPHET, 29}, {ENGI_DRUM, 0}};
+#if DOCK_BAND   /* Dock's Yacht: Funk Bass II, TINE EP (a stand-in until EP exists), JUNO Silk Lead, 808 KIT */
+static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 4}, {ENGI_FM6, 0}, {ENGI_JUNO, JUNO_SILK_LEAD}, {ENGI_DRUM, 0}};
 #else   /* Melodee's: PROPHET FUNK BASS II (was ANALOG ACID), FM6 PAD (was DIGITAL PAD), SID INIT SID, DRUM KIT */
 static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 4}, {ENGI_FM6, 4}, {3, 0}, {ENGI_DRUM, 0}};
 #endif

@@ -742,6 +742,17 @@ static int32_t env_tick(track_t *t, voice_t *v)
 static uint8_t spread_on;
 static int32_t spread_storage[CTL];
 static int32_t *spread_buf=spread_storage;
+/* the part plays in stereo: SPREAD (POLY, UNISON), or an engine of its own stereo (JUNO's chorus I and II: its post
+ * leaves the left channel in spread_buf, the sum in out). Its width: SPRD's, the engine's full width (Dock) */
+static int trk_stereo(const track_t *t)
+{
+    if (ENGINES[t->engine] == &ENG_JUNO && juno_stereo(t)) return 1;
+    return t->p[P_SPRD] > 0 && (trk_vmode(t) == V_POLY || trk_vmode(t) == V_UNISON);
+}
+static int32_t trk_width(const track_t *t)
+{
+    return ENGINES[t->engine] == &ENG_JUNO && juno_stereo(t) ? 64 : (t->p[P_SPRD] + 1) >> 1;
+}
 static __attribute__((noinline)) void spread_clear(void)
 {
     uint32_t i;

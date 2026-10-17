@@ -123,6 +123,7 @@ static void host_preset_values(track_t *t, uint32_t e, uint32_t pi, const preset
     cz_factory_loaded(t);
     if(e==ENGI_PROPHET){uint32_t k=(uint32_t)(t-trk)%NTRK;p5_ready[k]=1;p5_preset_loaded(t,pi);}   /* (its program, as ui.c) */
     fm6_track_loaded(t);                          /* FM6: the preset's patch (ui.c apply_preset_to) */
+    if(e==ENGI_JUNO)juno_preset_loaded(t,pi);    /* (Dock) JUNO: its LFO, key tracking, glide, drift */
 }
 static void host_preset_req(track_t *t, uint32_t e, uint32_t pi)
 {

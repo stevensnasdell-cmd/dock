@@ -499,7 +499,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_pan(track_t *t,int
         for(uint32_t i=0;i<n;i++)fx_left[i]=fx_right[i]=clamp(b[i],-65536,65536);
         return;
     }
-    int32_t pan=0,s=spread_on?(t->p[P_SPRD]+1)>>1:0;
+    int32_t pan=0,s=spread_on?trk_width(t):0;
     int32_t pa=clamp(pan-s,-64,63),pb=clamp(pan+s,-64,63);
     int32_t gla=4096-(pa>0?pa*64:0),gra=4096+(pa<0?pa*64:0),glb=4096-(pb>0?pb*64:0),grb=4096+(pb<0?pb*64:0);
     for(uint32_t i=0;i<n;i++){

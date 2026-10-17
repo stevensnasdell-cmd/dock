@@ -5,6 +5,26 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 ## Unreleased
 
+### Engines
+- **JUNO** (`firmware/src/eng_juno.c`), a Juno-60-style voice: one DCO (polyBLEP saw, pulse with PWM, sub square an
+  octave down, noise, a level each) -> the Juno-60's fixed high pass (off, 154, 339, 720 Hz) -> a 4-pole resonant
+  low pass (zero-delay-feedback ladder, soft-saturating) -> VCA, the ADSR shared by both (VCA GATE: HPF "0 GT".."3 GT").
+  The track's LFO (with its fade-in delay) moves pitch, cutoff and pulse width; key tracking comes from the matrix
+  (slot 4 KEY -> CUT, set by each sound); DTUNE is a per-note drift.
+- **Chorus I / II / I+II**, after the published Juno-60 measurements (I 0.513 Hz, II 0.863 Hz over 1.66–5.35 ms,
+  stereo, the two taps in opposite directions; I+II 9.75 Hz over 3.3–3.7 ms, mono). One 1 KB line per part. A JUNO part
+  with chorus I or II plays in full stereo.
+- Sounds: INIT JUNO, **SILK LEAD** (mono, now the Lead's power-on sound in place of PROPHET Nice n Smooth),
+  **STR MACHINE** (Kraut: PWM strings, chorus I+II), **STRING WASH** and **WIDE PAD** (Goth), SQUARE LEAD, JUNO BASS,
+  JUNO BRASS, GATE ORGAN, GLASS LEAD. HOME's knobs: CUT, RES, REL, CHOR; CC 74 / 71 turn CUT / RES.
+- JUNO takes stored engine ID 14 (Melodee's OBXF, retired in 0.11): IDs 16–18 are user-preset namespaces in the
+  browser and favourites, and user presets only store engines below 16.
+- Cost, host only: a JUNO voice is about 0.6–0.7 of a PROPHET voice (`tests/juno_test.c` prints it), so it charges
+  2 voice units to the Prophet's 3. The device's own figure needs the JieLi toolchain (Phase 2).
+- `tests/juno_test.c` (in `tests/dock_tests.sh`): every sound plays, stays finite and unclipped (also at full
+  resonance on a chord); the filter darkens; chorus I and II widen to stereo, OFF and I+II stay mono; Silk Lead on the
+  Lead at power-on. Optional WAVs of every sound: `build/host/juno_test build/juno`.
+
 ### Design
 - **Style guide** `docs/design/DOCK_STYLE.md`: colour = band member, shapes not numbers, calm screens, nothing under
   16 px or cut; tokens, type roles, the 240 × 240 grid, components, and what changed from the scamps and why.

@@ -29,6 +29,7 @@ static const char *const PRESET_CAT[NENGINES] = {
     [3] = "OLBBBBBBLLLLLLLLPSPPGGKKUUERFFFF",          /* SID */
     [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEO",                 /* FM6, INIT VOICE */
+    [ENGI_JUNO] = "OLSSPLBRGL",                         /* JUNO: INIT, then Dock's sounds */
     [ENGI_CZ] = "ORRRSSSSSUUUBBBBURWSWWWWUKKKKKKKKGGGGGPPPEEEEEDEESSULLLLFDDDEFFFF",   /* INIT TONE, Casio's 64 */
     [ENGI_PROPHET] =                                    /* INIT, Sequential's 200 */
         "OOOKBPROOOGKLPWPOLOUUBEOEGFPOOBOEOOODDDEOOGKSGBPEPPLBROOOOPOKPKOFOSOOEPRODFLFOOEOULWOPBOLOPKFORGLPOBULROOSKOO"

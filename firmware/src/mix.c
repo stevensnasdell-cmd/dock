@@ -113,7 +113,7 @@ static __attribute__((noinline)) void mix_spread(track_t *t, int32_t *b, uint32_
 {
     uint32_t send=fx_send_on?fx_send_gain(t):0u;
     int32_t *d=spread_buf;
-    int32_t lvl=LEVEL_Q12[t->p[P_LEVEL] & 127],pan=t->p[P_PAN],s=(t->p[P_SPRD]+1)>>1;
+    int32_t lvl=LEVEL_Q12[t->p[P_LEVEL] & 127],pan=t->p[P_PAN],s=trk_width(t);
     int32_t pa=clamp(pan-s,-64,63),pb=clamp(pan+s,-64,63);
     int32_t gla=4096-(pa>0?pa*64:0),gra=4096+(pa<0?pa*64:0);
     int32_t glb=4096-(pb>0?pb*64:0),grb=4096+(pb<0?pb*64:0);
@@ -183,7 +183,7 @@ static __attribute__((noinline)) void mix_prepare_batch(uint32_t n,uint32_t nt) 
     audio_batch_active=1;
     for(uint32_t p=0;p<nt;p++){
         track_t *t=&trk[p];mod_begin(t);batch_mod[p]=mod;memcpy(batch_params[p],t->p,sizeof t->p);
-        spread_on=t->p[P_SPRD]>0 && (trk_vmode(t)==V_POLY || trk_vmode(t)==V_UNISON);
+        spread_on=(uint8_t)trk_stereo(t);
         batch_spread_on[p]=spread_on;spread_buf=batch_spread[p];
         batch_rendered[p]=track_render_audio(t,batch_pcm[p],n,0);
         if(mod.on)mod_end(t);
@@ -216,7 +216,7 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
 #endif
     {
         part_buf=part_storage;spread_buf=spread_storage;mod_begin(t);
-        spread_on=t->p[P_SPRD]>0 && (trk_vmode(t)==V_POLY || trk_vmode(t)==V_UNISON);
+        spread_on=(uint8_t)trk_stereo(t);
         rendered=(int)track_render_audio(t,part_buf,n,0);
     }
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)

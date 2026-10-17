@@ -945,6 +945,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = DOCK_LOAD_VOICE(trk_index(t), pr->mono);   /* mono presets keep the legato feel; Dock: Bass, Lead */
     if(t->eng_req==ENGI_PROPHET)p5_preset_loaded(t,pi);
+    if(t->eng_req==ENGI_JUNO)juno_preset_loaded(t,pi);
     cz_factory_loaded(t);
     cz_track_accept(t);
     fm6_track_loaded(t);                              /* FM6: the preset's patch */
