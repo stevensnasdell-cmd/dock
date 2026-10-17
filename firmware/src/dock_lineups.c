@@ -23,7 +23,8 @@ typedef struct {
 #define DOCK_ECHO_MS(ms) ((uint8_t)((((ms) * 11025 / 1000) - 110) / 31))
 
 static const dock_lineup_t DOCK_LINEUPS[] = {
-    {"Yacht", {{ENGI_PROPHET, 4},    /* Funk Bass II */
+    {"Yacht", {{ENGI_PROPHET, 135},  /* Feature My Bass: in tune, round (Funk Bass II is a detuned, synced program:
+                                      * ~65 cents sharp by design, a chiptune edge) */
                {ENGI_EP, EP_SUITCASE}, /* SUITCASE: the Rhodes, stereo vibrato */
                {ENGI_JUNO, 1},       /* SILK LEAD */
                {ENGI_DRUM, 0}},      /* 808 KIT */

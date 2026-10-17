@@ -24,6 +24,32 @@ static double play(uint32_t k){
   run_ms(1500);
   return 10.0*log10(acc/n + 1e-12);
 }
+/* part k's pitch error in cents on a held note (autocorrelation; checked at 60 and 72; drums: none) */
+static double tune_cents(uint32_t k, uint32_t note)
+{
+    static float x[22050];
+    uint32_t n = 0, l, best_l = 0;
+    double best = 0, hz, want = 440.0 * pow(2.0, ((double)note - 69.0) / 12.0), c;
+    web_midi(0x90 | k, note, 100);
+    run_ms(150);                                        /* (past the attack) */
+    while (n < 22050u) {
+        web_render(128);
+        for (uint32_t i = 0; i < 128u && n < 22050u; i++) x[n++] = out_l[i] + out_r[i];
+    }
+    web_midi(0x80 | k, note, 0);
+    run_ms(1200);
+    for (l = 44100u / 1000u; l < 44100u / 40u; l++) {
+        double s = 0;
+        for (uint32_t i = 0; i + l < 22050u; i++) s += (double)x[i] * x[i + l];
+        if (s > best) { best = s; best_l = l; }
+    }
+    hz = 44100.0 / best_l;
+    c = 1200.0 * log2(hz / want);
+    while (c > 600) c -= 1200;                          /* (an octave either way is the same note) */
+    while (c < -600) c += 1200;
+    return c;
+}
+
 int main(void){ web_boot(); run_ms(300);
   static const char *R[4]={"Bass","Keys","Lead","Drums"};
   static const double T[4]={-24,-27,-26,-25};
@@ -35,6 +61,15 @@ int main(void){ web_boot(); run_ms(300);
       int ok = fabs(db - T[k]) <= 3.5; bad += !ok; printf("  %s %-14s %6.1f%s|", R[k], nm, db, ok ? " " : "!"); }
     printf("\n");
   }
-  printf(bad ? "dock balance: %d sounds off their role's level\n" : "dock balance: all passed\n", bad);
+  for (uint32_t i=0;i<DOCK_NLINEUPS;i++){                /* in tune: every melodic Line-up sound within 25 cents */
+    dock_lineup_load(i);
+    for (uint32_t k=0;k<NPART;k++) for (uint32_t f=0;f<FX_SLOTS;f++) trk[k].p[P_FXSEND+f]=0;   /* (dry: a room blurs pitch) */
+    run_ms(1500);
+    printf("%-6s tuning", DOCK_LINEUPS[i].name);
+    for (uint32_t k=0;k<DOCK_DRUMS;k++){ char nm[24]; int pd; double c = (tune_cents(k,60) + tune_cents(k,72)) / 2;   /* (mid notes: a rich low note fools autocorrelation) */
+      int ok = fabs(c) <= 25.0; bad += !ok; dk_name(k,nm,sizeof nm,&pd); printf("  %s %-14s %+4.0fc%s|", R[k], nm, c, ok ? " " : "!"); }
+    printf("\n");
+  }
+  printf(bad ? "dock balance: %d sounds off their role's level or out of tune\n" : "dock balance: all passed\n", bad);
   return bad != 0;
 }

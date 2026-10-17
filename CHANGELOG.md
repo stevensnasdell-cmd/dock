@@ -129,6 +129,9 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Yacht's bass** is now PROPHET Feature My Bass: Funk Bass II (Melodee's default) is a detuned, synced program,
+  ~65 cents sharp by design, which sounded out of tune and chiptune-like against the Rhodes. The balance test also
+  checks every melodic Line-up sound is in tune (within 25 cents; all are within 8).
 - **Rooms:** each Line-up now brings its own effects (DOCK.md §5), recalled with its sounds by SELECT on HOME and at
   power-on (Yacht). They use Melodee's own shared effects (`fx.c`: three slots, CHAIN or SPLIT, the version Melodee
   measured on the device), set per Line-up in `firmware/src/dock_lineups.c` with every part's sends (less on the Bass);
