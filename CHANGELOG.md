@@ -9,6 +9,11 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the
   JUNO and EP engines exist: PROPHET Funk Bass II, FM6 TINE EP, PROPHET Nice n Smooth, 808 KIT.
+- **No sequencer** (`DOCK_BAND`): SEQ and REC do nothing yet (no patterns, step pages, pattern recording or
+  Capture; DOCK.md gives them the clock status and the looper later); no step dots on HOME; no Add / Remove track.
+- **Last-note priority** on Bass and Lead, so a sequencer's slides (new note before the old note-off) play
+  straight away; a Prophet sound's own low-note priority no longer applies there.
+- `tests/dock_ui_test.c`: the band on the real UI.
 - `tests/dock_tests.sh`: Dock's quick host checks (voices, UI on Melodee's rules, emulator).
 - **Voices by member** (`firmware/src/voice.c`, `DOCK_VOICES`): Bass 1, Keys 6, Lead 1 voices of their own (8),
   never taken by another part; a member over its share steals only from itself (oldest released first, the lowest

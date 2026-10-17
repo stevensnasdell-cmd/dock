@@ -97,7 +97,10 @@ static void ps_remove_v(char *b) { ps_trk_v(b, song.sel, trk_n() < 2u); }
 static const sheet_row_t SHEET_STAGE[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
     {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0},
-    {"Add track", ps_add_v, 0, track_add, 0}, {"Remove track", ps_remove_v, 0, 0, CF_DEL_TRACK}};
+#if !DOCK_BAND   /* Dock: the band is always four parts */
+    {"Add track", ps_add_v, 0, track_add, 0}, {"Remove track", ps_remove_v, 0, 0, CF_DEL_TRACK},
+#endif
+};
 /* the song's (SONG) */
 static int ps_song_free(void)
 {

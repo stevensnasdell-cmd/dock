@@ -114,6 +114,9 @@ static const uint8_t TRK_KEY[NTRK] = {1, 3, 5, 8};
 #define PAT_DTAP_MS 300u
 static int pattern_keys_on(void)
 {
+#if DOCK_BAND
+    return 0;                                           /* Dock: no patterns */
+#endif
     return !ui.menu && !ui.confirm && !name_on() && !ui.ly && !ui.uboot &&
         (fm1_in.buttons & (1u << panel.btn[B_SEQ]));
 }
@@ -1638,6 +1641,8 @@ static void page_tap(uint32_t b)
     }
     for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
         if (FAM_BTN[f] == b) {
+            if (DOCK_BAND && f == FAM_SEQ)
+                return;                                 /* Dock: no SEQ pages yet */
             open_family(f);
             return;
         }
@@ -1990,6 +1995,10 @@ static void ui_input(void)
         now - (ui.seq_t0 & ~3u) > 700u * 1000u * FM1_TICKS_PER_US;
     uint32_t seq = btn_hold(&ui.seq_t0, B_SEQ, now, !ui.menu && !ui.confirm && !motion_page());
     if (seq_long) seq = BT_HOLD;
+#if DOCK_BAND
+    rec = seq = BT_NONE;                                /* Dock: no pattern recording, capture, patterns or step pages
+                                                         * (DOCK.md: SEQ becomes the clock status, REC the looper) */
+#endif
     uint32_t save = btn_hold(&ui.save_t0, B_SAVE, now, !ui.menu && !ui.confirm);
     uint32_t edit = btn_hold(&ui.edit_t0, B_EDIT, now, !ui.menu && !ui.confirm && !name_on() && !new_on() && !ui.ly);
     uint32_t octup = btn_hold(&ui.oct_t0, B_OCTUP, now, page_sheet() != 0u);   /* held: the page's sheet */
@@ -2247,7 +2256,7 @@ static void ui_input(void)
         b = panel_btn_of(id);
         switch (b) {
         case B_PLAY:
-            if ((fm1_in.buttons >> panel.btn[B_REC]) & 1u) {   /* REC + PLAY: record now */
+            if (!DOCK_BAND && ((fm1_in.buttons >> panel.btn[B_REC]) & 1u)) {   /* REC + PLAY: record now */
                 rec_play();
                 break;
             }

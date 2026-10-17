@@ -15,6 +15,9 @@
 /* the parts, in order: MIDI channels 1..4 by default (G_ROUTE CH1-4) */
 enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };
 
+/* Bass and Lead: the members that play one note at a time */
+#define DOCK_MONO_PART(part) (DOCK_BAND && ((part) == DOCK_BASS || (part) == DOCK_LEAD))
+
 /* the voice mode a sound load sets (pr_mono: the preset's own MONO flag): Bass and Lead always mono legato */
 #if DOCK_BAND
 #define DOCK_LOAD_VOICE(part, pr_mono) \

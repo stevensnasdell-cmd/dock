@@ -373,6 +373,10 @@ static st_lay_t st_layout(uint32_t nb, int32_t w, int32_t h)   /* the largest do
 }
 static void stage_steps(const track_t *t, uint32_t ph, uint16_t tc, uint16_t bg, int32_t x, int32_t y, const st_lay_t *l)
 {
+#if DOCK_BAND
+    (void)t; (void)ph; (void)tc; (void)bg; (void)x; (void)y; (void)l;
+    return;                                             /* Dock: no patterns, no step dots */
+#endif
     uint32_t i, len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
     int32_t p = l->p, d = p <= 6 ? p - 1 : p - (p / 4 > 2 ? p / 4 : 2);   /* (the dots: 4 px at a pitch of 5, 9 at 12) */
     int32_t bw = l->c * p + (l->c / 4 - 1) * st_bgap(p), bh = l->r * p;
