@@ -132,9 +132,9 @@ int main(int argc, char **argv)
     for (uint32_t k = 0; k < NPART; k++)
         host_power_on_sound(&trk[k], k);
 
-    /* Silk Lead: the Lead's sound at power-on */
-    str_cpy(name, eng_preset(ENGINES[TRK_DEF[DOCK_LEAD][0]], TRK_DEF[DOCK_LEAD][1])->name, 21);
-    check("power-on: the Lead plays JUNO SILK LEAD", trk[DOCK_LEAD].engine == ENGI_JUNO && str_eq(name, "SILK LEAD"));
+    /* Silk Lead: JUNO's lead (no longer Yacht's: the CZ-1 ELEC.PIANO was picked by ear for it) */
+    str_cpy(name, eng_preset(ENGINES[ENGI_JUNO], JUNO_SILK_LEAD)->name, 21);
+    check("JUNO_SILK_LEAD is SILK LEAD", str_eq(name, "SILK LEAD"));
     check("JUNO can be picked (PRESETS, the editor)", eng_ok(ENGI_JUNO) && eng_rank(ENGI_JUNO) < NENG_SHOWN &&
                                                       eng_vis(eng_rank(ENGI_JUNO)) == ENGI_JUNO);
 

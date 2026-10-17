@@ -26,7 +26,7 @@ static const dock_lineup_t DOCK_LINEUPS[] = {
     {"Yacht", {{ENGI_PROPHET, 135},  /* Feature My Bass: in tune, round (Funk Bass II is a detuned, synced program:
                                       * ~65 cents sharp by design, a chiptune edge) */
                {ENGI_EP, EP_SUITCASE}, /* SUITCASE: the Rhodes, stereo vibrato */
-               {ENGI_JUNO, 1},       /* SILK LEAD */
+               {ENGI_CZ, 28},         /* ELEC.PIANO (CZ-1): picked by ear for the Lead, 2026-10-17 */
                {ENGI_DRUM, 0}},      /* 808 KIT */
      /* warm plate: a short dense tank, its top rolled off; the Lead's own delay (300 ms: an eighth at 100 BPM) */
      {1, 100, {{FX_REVERB, 127, 48, 66, -12}, {FX_ECHO, 127, DOCK_ECHO_MS(300), 55, -20}, {0}},

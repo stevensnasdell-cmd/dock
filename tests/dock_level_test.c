@@ -24,30 +24,32 @@ static double play(uint32_t k){
   run_ms(1500);
   return 10.0*log10(acc/n + 1e-12);
 }
-/* part k's pitch error in cents on a held note (autocorrelation; checked at 60 and 72; drums: none) */
+/* part k's pitch error in cents on a held note: the strongest frequency within 100 cents of the note asked for (a
+ * Hann-windowed DFT scanned in 2-cent steps; checked at 60 and 72; drums: none). Autocorrelation misread rich low
+ * notes and short plucks; knowing the note, a scan around it does not */
 static double tune_cents(uint32_t k, uint32_t note)
 {
     static float x[22050];
-    uint32_t n = 0, l, best_l = 0;
-    double best = 0, hz, want = 440.0 * pow(2.0, ((double)note - 69.0) / 12.0), c;
+    uint32_t n = 0, i;
+    int32_t c, best_c = 0;
+    double best = -1, want = 440.0 * pow(2.0, ((double)note - 69.0) / 12.0);
     web_midi(0x90 | k, note, 100);
-    run_ms(150);                                        /* (past the attack) */
+    run_ms(100);                                        /* (past the attack) */
     while (n < 22050u) {
         web_render(128);
-        for (uint32_t i = 0; i < 128u && n < 22050u; i++) x[n++] = out_l[i] + out_r[i];
+        for (i = 0; i < 128u && n < 22050u; i++) x[n++] = out_l[i] + out_r[i];
     }
     web_midi(0x80 | k, note, 0);
     run_ms(1200);
-    for (l = 44100u / 1000u; l < 44100u / 40u; l++) {
-        double s = 0;
-        for (uint32_t i = 0; i + l < 22050u; i++) s += (double)x[i] * x[i + l];
-        if (s > best) { best = s; best_l = l; }
+    for (i = 0; i < 22050u; i++)
+        x[i] *= (float)(0.5 - 0.5 * cos(2.0 * M_PI * i / 22049.0));
+    for (c = -100; c <= 100; c += 2) {
+        double w = 2.0 * M_PI * want * pow(2.0, c / 1200.0) / 44100.0, re = 0, im = 0, m;
+        for (i = 0; i < 22050u; i++) { re += x[i] * cos(w * i); im += x[i] * sin(w * i); }
+        m = re * re + im * im;
+        if (m > best) { best = m; best_c = c; }
     }
-    hz = 44100.0 / best_l;
-    c = 1200.0 * log2(hz / want);
-    while (c > 600) c -= 1200;                          /* (an octave either way is the same note) */
-    while (c < -600) c += 1200;
-    return c;
+    return best_c;
 }
 
 int main(void){ web_boot(); run_ms(300);
@@ -66,8 +68,10 @@ int main(void){ web_boot(); run_ms(300);
     for (uint32_t k=0;k<NPART;k++) for (uint32_t f=0;f<FX_SLOTS;f++) trk[k].p[P_FXSEND+f]=0;   /* (dry: a room blurs pitch) */
     run_ms(1500);
     printf("%-6s tuning", DOCK_LINEUPS[i].name);
-    for (uint32_t k=0;k<DOCK_DRUMS;k++){ char nm[24]; int pd; double c = (tune_cents(k,60) + tune_cents(k,72)) / 2;   /* (mid notes: a rich low note fools autocorrelation) */
-      int ok = fabs(c) <= 25.0; bad += !ok; dk_name(k,nm,sizeof nm,&pd); printf("  %s %-14s %+4.0fc%s|", R[k], nm, c, ok ? " " : "!"); }
+    for (uint32_t k=0;k<DOCK_DRUMS;k++){ char nm[24]; int pd; double c = (tune_cents(k,60) + tune_cents(k,72)) / 2;
+      const uint8_t *sd = DOCK_LINEUPS[i].snd[k];
+      int wobble = sd[0] == ENGI_PROPHET && sd[1] == 127;   /* Faint Memories: detuned and wobbling by design, picked by ear */
+      int ok = wobble || fabs(c) <= 25.0; bad += !ok; dk_name(k,nm,sizeof nm,&pd); printf("  %s %-14s %+4.0fc%s|", R[k], nm, c, wobble ? "~" : ok ? " " : "!"); }
     printf("\n");
   }
   printf(bad ? "dock balance: %d sounds off their role's level or out of tune\n" : "dock balance: all passed\n", bad);

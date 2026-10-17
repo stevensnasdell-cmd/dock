@@ -129,6 +129,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Yacht's Lead** is now the CZ-1 ELEC.PIANO (picked by ear); it is also the power-on Lead.
+- The tuning check scans for the strongest frequency within 100 cents of the note played (autocorrelation misread
+  rich low notes and short plucks, flagging in-tune sounds). Goth's Faint Memories wobbles and spreads on purpose and
+  is marked as such rather than checked.
 - **Bass and Lead strike every note.** They were legato, so a note overlapping the last (the Circuit's ties and
   slides) didn't re-attack: Hot's Surf Twang and Upright bent instead of plucking, plucky basses lost their snap, and
   Yacht's Silk Lead glided into every note. Now MONO: every note strikes, and a sound's glide moves only between

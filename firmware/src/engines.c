@@ -239,7 +239,7 @@ static uint32_t eng_step(uint32_t e, int32_t dir)
 
 /* the parts at power-on (engine, preset; the steps empty): bass, pad, lead, drums */
 #if DOCK_BAND   /* Dock's Yacht (dock_lineups.c): Funk Bass II, EP Suitcase, JUNO Silk Lead, 808 KIT */
-static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 135}, {ENGI_EP, EP_SUITCASE}, {ENGI_JUNO, JUNO_SILK_LEAD}, {ENGI_DRUM, 0}};
+static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 135}, {ENGI_EP, EP_SUITCASE}, {ENGI_CZ, 28}, {ENGI_DRUM, 0}};
 #else   /* Melodee's: PROPHET FUNK BASS II (was ANALOG ACID), FM6 PAD (was DIGITAL PAD), SID INIT SID, DRUM KIT */
 static const uint8_t TRK_DEF[NPART][2] = {{ENGI_PROPHET, 4}, {ENGI_FM6, 4}, {3, 0}, {ENGI_DRUM, 0}};
 #endif
