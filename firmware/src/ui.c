@@ -943,7 +943,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
     t->p[P_ED_FLT] = pr->fenv;
-    t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
+    t->p[P_VOICE] = DOCK_LOAD_VOICE(trk_index(t), pr->mono);   /* mono presets keep the legato feel; Dock: Bass, Lead */
     if(t->eng_req==ENGI_PROPHET)p5_preset_loaded(t,pi);
     cz_factory_loaded(t);
     cz_track_accept(t);

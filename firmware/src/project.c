@@ -404,7 +404,7 @@ static void proj_legacy_perc(track_t *t)
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
     t->p[P_ED_FLT] = pr->fenv;
-    t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;
+    t->p[P_VOICE] = DOCK_LOAD_VOICE((uint32_t)(t - trk), pr->mono);   /* Dock: Bass and Lead mono legato */
 }
 
 #ifdef CV_WORK_BYTES

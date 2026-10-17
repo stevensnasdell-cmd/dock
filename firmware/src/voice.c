@@ -221,11 +221,8 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
  * and a member over its share steals from itself (oldest released note first, then its oldest held, the lowest held
  * note last). The drummer (DOCK_DRUM_PART) plays in its own lane of DOCK_DRUM_LANE hits, outside the band's voices:
  * it never takes one of theirs and they never take one of its. Copyright (C) 2026 Steven Snasdell. */
-#ifndef DOCK_VOICES
-#define DOCK_VOICES 1
-#endif
 #if DOCK_VOICES
-#define DOCK_DRUM_PART 3u
+#define DOCK_DRUM_PART DOCK_DRUMS
 #define DOCK_DRUM_LANE 6u
 static uint8_t dock_share[NPART] = {1u, 6u, 1u, DOCK_DRUM_LANE};   /* Bass, Keys, Lead (8 voices), the drummer */
 

@@ -10,6 +10,7 @@
 #include "tuning.h"
 #include "audio_profile.h"
 #include "wire_bits.h"
+#include "dock.h"                /* Dock's switches and the band (DOCK.md) */
 
 /* ------------------------------------------------------------ sizes --- */
 #define NVOICE 16                /* voice slots per part (FM6 plays Dexed's 16) */
@@ -461,7 +462,11 @@ static song_t song;
 #define TSEL (&trk[song.sel])    /* the selected track */
 /* The tracks in use: 1..trk_n(), always from track 1 (it clocks the song). The others keep their structs, sound and
  * play nothing (voice.c trk_note_on), are drawn nowhere and get a fresh sound when added (project.c track_add) */
+#if DOCK_BAND
+static inline uint32_t trk_n(void) { return NTRK; }   /* Dock: the band is always all four parts */
+#else
 static inline uint32_t trk_n(void) { return song.ntrk - 1u < NTRK ? song.ntrk : NTRK; }
+#endif
 
 #include "microtonal.h"
 
