@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Copyright (C) 2026 Kerem Kilic (Ellic Studio) */
+ * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+ * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments (Dock's SPRING: Felucca's rev_spring) */
 /* Three stereo inserts per track, four sections per side per filter slot.
  * The EQ accelerator is time-shared, not claimed as 32 independent lanes.
  * OFF / MIX 0 leaves the existing dry mixer bit-identical and allocates nothing.
@@ -8,7 +9,11 @@
 #define FX_RATE (FS/4u)
 #define FX_REV_DIV 8u
 #define FX_REV_LOOP_SHIFT 4                      /* the reverb's round trip low cut: ~55 Hz at FS/8 */
+#if DOCK_SPRING   /* Dock: SPRING appended (stored type 10), so saved IDs stay */
+enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_SPRING, FX_COUNT };
+#else
 enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_COUNT };
+#endif
 typedef struct { float b0,b1,b2,a1,a2,z1,z2; } fx_bq_t;
 typedef struct {
     fx_bq_t q[2][4];
@@ -289,6 +294,62 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *r
     }
     f->mix=mix;
 }
+#if DOCK_SPRING
+/* SPRING (Dock): one spring of a spring tank, after Felucca's rev_spring (Leo Kuroshita, GPL-3.0; after Valimaki,
+ * Parker and Abel). The send (low cut ~55 Hz) and the loop's return pass SP_N stretched first-order allpasses,
+ * (a + z^-2) / (1 + a z^-2) at FS/4, two interleaved chains: the same response as Felucca's z^-4 at FS/2, a group
+ * delay rising with frequency below ~2.7 kHz, the chirp; every pass round the loop adds more (the "boing", the
+ * drips). Then the loop's line, a one-pole low-pass and the decay gain. Out: the spring's far end, half way along
+ * the loop, with a slow wobble of a sample or so, and a second pickup at three quarters (a shorter spring beside it),
+ * weighted differently on left and right. SIZE: the loop, 60 .. 120 ms; DECAY: its gain, 0.6 .. 0.93. One 4.1 KiB
+ * allocation: the line (2048 int16) and the chains' states (int32, no clamps: bounded by the loop's input).
+ * State reuse (no time effect uses these): rev_pos[0] write index, rev_gain[0] the loop length (Q8, glides),
+ * rev_damp[0] the loop low-pass, rev_bass[0..1] the low cut and its remainder, rev_input the 4-sample average. */
+#define SP_LEN 2048u
+#define SP_MASK (SP_LEN - 1u)
+#define SP_N 10u                                       /* allpass stages */
+#define SP_A 2867                                      /* their coefficient, Q12 (0.7) */
+#define FX_SPRING_BYTES (SP_LEN * 2u + 2u * (SP_N + 1u) * 4u)
+static __attribute__((noinline,section(".dsp_text"))) void fx_spring(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
+{
+    int16_t *ln=mem;int32_t *ap=(int32_t *)(void *)(mem+SP_LEN);
+    int32_t mix=f->mix,g=19661+f->character*85,kl=28300;   /* the loop low-pass: ~3.5 kHz at FS/4 */
+    int32_t len=(int32_t)(662u+(((uint32_t)f->rate*662u)>>7))<<8;
+    if(!f->rev_gain[0])f->rev_gain[0]=len;
+    f->rev_gain[0]+=clamp(len-f->rev_gain[0],-256,256);       /* SIZE glides (a sample a block at most) */
+    int32_t L=f->rev_gain[0]>>8,L3=(L*3)>>2;
+    f->phase+=LFO_INC[24]*n/CTL;
+    int32_t w=(f->rev_gain[0]>>1)+((fx_sine(f->phase)*3)>>9),L2=w>>8,fr=w&255;   /* the far end, Q8 */
+    uint32_t phase=f->decim;
+    for(uint32_t i=0;i<n;i++){
+        f->rev_input+=fx_div_pow2(fx_left[i]+fx_right[i],1);
+        if(!phase){
+            int32_t x=fx_tone_input(f,fx_div_pow2(f->rev_input,2),1.0f/(0.010f*FX_RATE));f->rev_input=0;
+            uint32_t wp=f->rev_pos[0],j=(wp&1u)*(SP_N+1u);
+            int32_t r=ln[(wp-(uint32_t)L)&SP_MASK],p,o;
+            int32_t t0=ln[(wp-(uint32_t)L2)&SP_MASK],t1=ln[(wp-(uint32_t)L2-1u)&SP_MASK],t3=ln[(wp-(uint32_t)L3)&SP_MASK];
+            x=fx_div_pow2(x,1);                                 /* (Melodee's send is quieter than Felucca's: half, not 0.08) */
+            f->rev_damp[0]+=fx_div_pow2((r-f->rev_damp[0])*kl,15);
+            x+=fx_div_pow2(f->rev_damp[0]*g,15);               /* towards 0: a loop of floors would hold an offset */
+            o=x-f->rev_bass[0]+f->rev_bass[1];                 /* the low cut, its step's remainder kept */
+            f->rev_bass[1]=o&31;f->rev_bass[0]+=o>>5;x-=f->rev_bass[0];
+            p=ap[j];ap[j]=x;
+            for(uint32_t k=1;k<=SP_N;k++){
+                int32_t v=(x-ap[j+k])*SP_A;o=ap[j+k];
+                x=fx_div_pow2(v,12)+p;p=o;ap[j+k]=x;
+            }
+            ln[wp&SP_MASK]=(int16_t)clamp(x,-32767,32767);f->rev_pos[0]=(uint16_t)((wp+1u)&SP_MASK);
+            int32_t far=t0+(((t1-t0)*fr)>>8);
+            f->rev_prev_l=f->rev_l;f->rev_prev_r=f->rev_r;
+            f->rev_l=softclip(fx_div_pow2(far*7+t3*4,3));f->rev_r=softclip(fx_div_pow2(far*5+t3*6,3));
+        }
+        int32_t l=f->rev_prev_l+fx_div_pow2((f->rev_l-f->rev_prev_l)*(int32_t)(phase+1u),2);
+        int32_t r=f->rev_prev_r+fx_div_pow2((f->rev_r-f->rev_prev_r)*(int32_t)(phase+1u),2);
+        fx_return(target,0,0,i,l,r,&mix);phase=(phase+1u)&3u;
+    }
+    f->mix=mix;f->decim=(uint8_t)phase;
+}
+#endif
 /* Full-band stereo chorus: two fractional taps, no feedback or filters.
  * 512 stereo int16 frames cost 2 KiB. The 5.8 ms centre and +/-2.9 ms
  * modulation fit comfortably in the ring. Sines/divides run once per block;
@@ -580,6 +641,9 @@ static void fx_slot_prepare(fx_plan_t *plan,uint32_t si,const int16_t *p)
     int16_t *mem=0;
     if(f->type>=FX_ECHO){
         uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:8192u;
+#if DOCK_SPRING
+        if(f->type==FX_SPRING)bytes=FX_SPRING_BYTES;
+#endif
         if(!f->failed && !resource[RES_FX0+si].size){
             void *(*volatile allocate)(uint32_t,uint32_t)=fx_memory;mem=allocate(RES_FX0+si,bytes);if(!mem)f->failed=1;
         }else if(resource[RES_FX0+si].size)mem=resource[RES_FX0+si].ptr;
@@ -605,7 +669,11 @@ static __attribute__((noinline,section(".audio_text"))) int fx_slot_run(const fx
         int32_t drift[8];for(uint32_t k=0;k<8u;k++)drift[k]=fx_sine(f->phase*(k+1u)+k*0x23456789u)*f->character/1024;
         f->phase+=n*11380u;void (*volatile setup)(fx_state_t *)=fx_reverb_setup;setup(f);
         void (*volatile run)(fx_state_t *,int16_t *,uint32_t,const int32_t *,int32_t)=fx_reverb;run(f,mem,n,drift,target);
-    }else if(f->type>=FX_ECHO){void (*volatile run)(fx_state_t *,int16_t *,uint32_t,int32_t)=fx_time;run(f,mem,n,target);}
+    }
+#if DOCK_SPRING
+    else if(f->type==FX_SPRING){void (*volatile run)(fx_state_t *,int16_t *,uint32_t,int32_t)=fx_spring;run(f,mem,n,target);}
+#endif
+    else if(f->type>=FX_ECHO){void (*volatile run)(fx_state_t *,int16_t *,uint32_t,int32_t)=fx_time;run(f,mem,n,target);}
     else {
         if(f->type==FX_TAPE){void (*volatile design)(fx_state_t *,uint32_t)=fx_tape_design;design(f,n);}
         else {if(!fx_hw_status){void (*volatile probe)(void)=fx_probe;probe();}void (*volatile design)(fx_state_t *,uint32_t)=fx_design;design(f,n);}

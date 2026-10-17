@@ -24,6 +24,15 @@ The tables themselves (`build/gen/rhodes_tables.h`) are generated at build time 
 "Fender" and "Wurlitzer" are trademarks of their owners; Dock's EP is an independent emulation, not affiliated with or
 endorsed by them.
 
+The effects' SPRING (Dock's rooms: Hot's spring tank) is Felucca's `rev_spring` (Leo Kuroshita, Hügelton
+Instruments, GPL-3.0-only; after Välimäki, Parker and Abel's stretched-allpass spring), ported into Melodee's effects at
+their quarter rate:
+
+| What | Who | Where |
+| --- | --- | --- |
+| SPRING: the stretched allpass chain, the loop's line, low-pass, low cut and decay, the wobbling far-end pickup and the second pickup | Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments; Dock's port Steven Snasdell | `firmware/src/fx.c` (`fx_spring`) |
+| The Line-ups' rooms: Melodee's shared effects (Kerem Kilic) set per Line-up | Steven Snasdell | `firmware/src/dock_lineups.c` |
+
 Dock's UI fonts, all SIL OFL 1.1, licences beside them in `assets/fonts/`: Space Grotesk (The Space Grotesk Project
 Authors, `OFL-SpaceGrotesk.txt`), Unbounded (The Unbounded Project Authors, `OFL-Unbounded.txt`), Space Mono (The Space
 Mono Project Authors, `OFL-SpaceMono.txt`).

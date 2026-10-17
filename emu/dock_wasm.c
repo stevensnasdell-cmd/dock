@@ -70,9 +70,22 @@ uint32_t dock_voices(uint32_t part)
 }
 
 #ifdef DOCK_SELFTEST
-/* bass riff on ch 1, a chord on ch 2, a lead note on ch 3, 4 s; three times: the power-on sounds (Yacht), then the
- * organs (Mod's Keys and Lead: WHEEL MOD HAMMOND, VOX COMBO), then the plucks (Hot's Bass and Lead: PLUCK UPRIGHT,
- * SURF TWANG) */
+/* a room on the shared effects (as dock_lineups.c sets one; this bridge has no UI to load a Line-up): SPLIT, three
+ * slots {type, mix, rate, char}, the same sends on every part */
+static void selftest_room(const int16_t fx[3][4], uint32_t send)
+{
+    song.g[G_FXMODE] = 1;
+    song.g[G_FXRETURN] = 100;
+    for (uint32_t s = 0; s < FX_SLOTS; s++) {
+        for (uint32_t k = 0; k < FX_PARAMS; k++)
+            song.g[G_MFXTYPE + s * FX_PARAMS + k] = fx[s][k];
+        for (uint32_t k = 0; k < NPART; k++)
+            trk[k].p[P_FXSEND + s] = (int16_t)send;
+    }
+}
+/* bass riff on ch 1, a chord on ch 2, a lead note on ch 3, 4 s; three times: the power-on sounds (Yacht) in a plate
+ * with a delay, then the organs (Mod's Keys and Lead: WHEEL MOD HAMMOND, VOX COMBO) in Goth's wash (reverb, delay,
+ * chorus), then the plucks (Hot's Bass and Lead: PLUCK UPRIGHT, SURF TWANG) in Hot's spring and slapback */
 int main(int argc, char **argv)
 {
     static const uint8_t riff[8] = {36, 36, 48, 36, 39, 36, 43, 46};
@@ -84,6 +97,11 @@ int main(int argc, char **argv)
     dock_init();
     for (pass = 0; pass < 3u; pass++) {
         uint32_t f = 0, step = 0, held = 0;
+        static const int16_t rooms[3][3][4] = {
+            {{FX_REVERB, 127, 48, 66}, {FX_ECHO, 127, 103, 55}, {0}},
+            {{FX_REVERB, 127, 127, 124}, {FX_ECHO, 127, 127, 100}, {FX_CHORUS, 127, 18, 110}},
+            {{FX_SPRING, 127, 40, 112}, {FX_ECHO, 127, 36, 0}, {0}}};
+        selftest_room(rooms[pass], 60);
         if (pass == 1u) {
             host_preset(&trk[DOCK_KEYS], ENGI_WHEEL, WHEEL_MOD_HAMMOND);
             host_preset(&trk[DOCK_LEAD], ENGI_WHEEL, WHEEL_VOX);

@@ -2,7 +2,9 @@
  * Copyright (C) 2026 Steven Snasdell
  * Dock's balance (firmware/src/dock_trim.c): every Line-up sound, played alone in its role at LEVEL's default, lands
  * near its role's loudness (Bass -24, Keys -27, Lead -26, Drums -25 dB RMS), within 3.5 dB (the percussive ones sit a
- * little under: the master limiter takes their attacks). Runs the emulator's firmware build (emu/dock_web.c). */
+ * little under: the master limiter takes their attacks). Dry: each Line-up's room (its shared effects' return) is off
+ * here, so the trims stay the sounds' own; tests/dock_room_test.c checks the rooms. Runs the emulator's firmware build
+ * (emu/dock_web.c). */
 #include "../emu/dock_web.c"
 static void run_ms(uint32_t ms){uint32_t e=fm1_ms+ms;while((int32_t)(fm1_ms-e)<0)web_render(128);}
 /* play part k alone for 4 s in its role and return the RMS in dBFS (device level) */
@@ -27,7 +29,7 @@ int main(void){ web_boot(); run_ms(300);
   static const double T[4]={-24,-27,-26,-25};
   int bad=0;
   for (uint32_t i=0;i<DOCK_NLINEUPS;i++){
-    dock_lineup_load(i); run_ms(300);
+    dock_lineup_load(i); song.g[G_FXRETURN] = 0; run_ms(300);   /* (dry: the room's return faded out) */
     printf("%-6s", DOCK_LINEUPS[i].name);
     for (uint32_t k=0;k<NPART;k++){ char nm[24]; int pd; double db; dk_name(k,nm,sizeof nm,&pd); db=play(k);
       int ok = fabs(db - T[k]) <= 3.5; bad += !ok; printf("  %s %-14s %6.1f%s|", R[k], nm, db, ok ? " " : "!"); }

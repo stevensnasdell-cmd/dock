@@ -4,6 +4,20 @@
 #include <assert.h>
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
+#if DOCK_BAND   /* Dock powers on with Yacht's room (dock_lineups.c); these checks start from Melodee's power-on: no shared FX */
+static void fx_power_on(void)
+{
+    ui_power_on();
+    for(uint32_t i=G_MFXTYPE;i<G_COUNT;i++)song.g[i]=GP[i].def;
+    for(uint32_t k=0;k<NTRK;k++)for(uint32_t s=0;s<FX_SLOTS;s++)trk[k].p[P_FXSEND+s]=0;
+}
+#define ui_power_on fx_power_on
+#endif
+#if DOCK_SPRING   /* Dock's SPRING (fx.c): its line and allpass states */
+#define FX_SPRING_EXPECT(type,mix) ((type)==FX_SPRING && (mix)?((FX_SPRING_BYTES+3u)&~3u):0u)
+#else
+#define FX_SPRING_EXPECT(type,mix) 0u
+#endif
 static void reset_fx(void)
 {
     fx_clear_all();memset(fx_state,0,sizeof fx_state);
@@ -23,7 +37,7 @@ static uint64_t fx_signal(uint32_t type,int rate,int character,int mix,const cha
             if(frame%173u==0u && !i)b[i]+=18000;
         }
         int on=fx_process(t,b,CTL);
-        assert(resource[RES_FX0].size==(type==FX_ECHO && mix?8192u:type==FX_REVERB && mix?FX_REVERB_BYTES:type==FX_CHORUS && mix?FX_CHORUS_BYTES:type==FX_ROOM && mix?2048u:0u));
+        assert(resource[RES_FX0].size==(type==FX_ECHO && mix?8192u:type==FX_REVERB && mix?FX_REVERB_BYTES:type==FX_CHORUS && mix?FX_CHORUS_BYTES:type==FX_ROOM && mix?2048u:FX_SPRING_EXPECT(type,mix)));
         for(uint32_t i=0;i<CTL;i++){
             int32_t l=on?fx_left[i]:b[i],r=on?fx_right[i]:b[i];
             assert(l>=-1000000 && l<=1000000 && r>=-1000000 && r<=1000000);

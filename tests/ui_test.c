@@ -168,6 +168,10 @@ static void ui_power_on(void)
         pat_sig[i] = steps_sig(t);
         pat_last[i] = 0;
     }
+#if DOCK_BAND
+    dock_lineup = 0;
+    dock_room_load(0);                                  /* (as main.c melodee_init: Yacht's room) */
+#endif
     undo_depth--;
     song.sel = 0;
     ui.home = 1;

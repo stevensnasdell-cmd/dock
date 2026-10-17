@@ -1070,6 +1070,10 @@ static void project_new_blank(void)
         pat_last[k] = 0;
         pat_sig[k] = steps_sig(t);
     }
+#if DOCK_BAND
+    dock_room_load(0);                                  /* the power-on sounds' room: Yacht's (dock_lineups.c) */
+    dock_lineup = 0;
+#endif
     undo_depth--;
     undo_clear();
     proj_cur = PROJ_NO_SLOT;

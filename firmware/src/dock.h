@@ -15,6 +15,9 @@
 #define DOCK_ORGAN_PLUCK DOCK_BAND /* WHEEL (the organ) and PHYS (PLUCK) back from Melodee's retired extras, without the
                                     * others (PHASE, VOICE, TRIO, NOISE stay out): core.h WHEEL_PHYS_ON */
 #endif
+#ifndef DOCK_SPRING
+#define DOCK_SPRING DOCK_BAND     /* the effects' SPRING (fx.c, after Felucca's), appended as type 10: Hot's room */
+#endif
 
 /* the parts, in order: MIDI channels 1..4 by default (G_ROUTE CH1-4) */
 enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };

@@ -89,7 +89,12 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 
 Power-on default: **Yacht Dock**.
 
-**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Still to come per Line-up: the room (effects), voice split, macros, groove. Tempo, which SELECT set on Melodee's HOME, needs a new home.
+**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Still to come per Line-up: voice split, macros, groove.
+
+**Built: the rooms.** Each Line-up sets Melodee's shared effects (three slots, CHAIN or SPLIT) and every part's sends
+when it loads: Yacht warm plate + Lead delay; Hot spring (Felucca's, ported as a new effect) + slapback; Kraut dry with
+a dark tape echo; Mod a small short room; Goth a huge drifting reverb, long delay and a chorus send (shimmer-ish: no
+pitch shift yet). Host cost 0.35–1.2 of a PROPHET voice; buffers 4–14 KiB from the audio arena (CHANGELOG). Tempo, which SELECT set on Melodee's HOME, needs a new home.
 
 ## 6. Controls (FM-1 panel)
 
@@ -195,7 +200,7 @@ Goal: play Dock on screen with the Circuit plugged in, and tune sounds by ear. N
 5. Four macros (Tone/Bite/Shape/Space), PART/BAND modes.
 6. JUNO engine + chorus → tune against references.
 7. EP engine (Rhodes, Wurly) + tremolo → tune. (Built from FRodhes; tuning by ear to do.)
-8. Bring back lean effects; build the five Line-ups with their rooms.
+8. Bring back lean effects; build the five Line-ups with their rooms. (Built: rooms on Melodee's shared effects, SPRING from Felucca; tuning by ear to do.)
 9. New UI to the design language; Baud Girl-style navigation.
 10. FX layer, then looper (BARS → CAPTURE → FREE).
 11. The drummer: kits and grooves per Dock, fills, variation, channel-10 step-aside.

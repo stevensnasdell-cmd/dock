@@ -160,6 +160,9 @@ static void melodee_init(void)
         pat_sig[i] = steps_sig(t);            /* (empty: not the user's) */
         pat_last[i] = 0;
     }
+#if DOCK_BAND
+    dock_room_load(0);                        /* Yacht's room with its sounds (dock_lineups.c) */
+#endif
     undo_depth--;
     song.sel = 0;
     song.master_q12 = 2048;

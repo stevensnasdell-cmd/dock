@@ -129,6 +129,29 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Rooms:** each Line-up now brings its own effects (DOCK.md §5), recalled with its sounds by SELECT on HOME and at
+  power-on (Yacht). They use Melodee's own shared effects (`fx.c`: three slots, CHAIN or SPLIT, the version Melodee
+  measured on the device), set per Line-up in `firmware/src/dock_lineups.c` with every part's sends (less on the Bass);
+  the parts' own inserts are cleared. Yacht: a warm plate (short dense REVERB, top rolled off) and a 300 ms delay on
+  the Lead. Hot: a spring tank and a 110 ms slapback. Kraut: dry, only a dark 340 ms tape echo (ECHO through TAPE's
+  drifting filters). Mod: a small short room (REVERB at its smallest, 0.6 s), sent hard. Goth: a huge wash (REVERB at
+  full size and depth, ~6 s, its lines drifting), a 367 ms delay and a deep slow CHORUS send widening the Bass and Lead.
+  First settings, to tune by ear with the Line-ups. Not a true shimmer (no pitch shift: that needs another buffer).
+- **SPRING** (new effect, stored type 10, `DOCK_SPRING`): Felucca's spring tank (Leo Kuroshita; ten stretched allpasses
+  in a loop, after Välimäki, Parker and Abel: the chirp and drips) ported into Melodee's effects at a quarter rate.
+  SIZE sets the spring (60–120 ms loop), DECAY its ring. One 4.1 KiB buffer. Its loop low-pass is set for the quarter
+  rate (Felucca's value dulled a bright note in a fraction of a second); it rings about 2 s.
+- **Cost and RAM** (`tests/dock_room_test.c`, host time, not the device): the shared bus costs 0.35 (Kraut) to 1.2
+  (Goth) of a PROPHET voice, Yacht 0.8, Hot 0.75, Mod 0.55. Buffers, from the audio arena: Yacht 12 KiB, Kraut 8,
+  Hot 12.1, Mod 4, Goth 14; with the engines, the most any Line-up uses is Hot's 42,960 B, inside the 48 KiB floor
+  (`fx_state`, 6,960 B, is static as before). The device figure needs the JieLi toolchain (Phase 2); if the device runs
+  short, FM6 is the agreed first cut.
+- `tests/dock_room_test.c` (in `tests/dock_tests.sh`): power-on and SELECT recall each room; every room renders
+  finite and unclipped with the whole band, is heard (its tail), adds at most 3 dB, and dies to silence; the SPRING
+  rings on; cost and RAM. `tests/dock_level_test.c` now measures the sounds dry (the return off), as the trims were
+  made. Melodee's `fx_test` starts from Melodee's power-on (no shared effects) and covers SPRING. The emulator's
+  self-test plays its three passes through rooms (plate + delay, Goth's wash, spring + slapback), native == wasm.
+- Found while testing: Mod's Bass (CZ ELEC.BASS 2) keeps sounding long after its key is up (about -2 dB a second).
 - **Balance:** the Line-ups' sounds were up to 23 dB apart (the Rhodes, the upright and the SID kits far too quiet).
   `firmware/src/dock_trim.c` trims each measured factory sound to its role's loudness (Bass -24, Keys -27, Lead -26,
   Drums -25 dB RMS alone) before its LEVEL, so the MIXER (tap GLO; ALGORITHM picks the member, KNOB 1 its level)
