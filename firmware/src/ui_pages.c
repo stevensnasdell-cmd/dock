@@ -239,7 +239,7 @@ static void pv_words(const char *label, const char *val, const char *unit, char 
 static void pv_sound_bar(int32_t y, uint32_t k, const char *en, const char *nm, uint16_t tc, uint16_t bg)
 {
     const aafont_t *lf = TY_LB, *tf = TY_TX;
-    char d[2] = {(char)('1' + k % NTRK), 0};
+    char d[2] = {DOCK_BADGE(k % NTRK), 0};
     int32_t cy = y + H_FOOT / 2;
     cv_rrect(4, cy - 11, 22, 22, 6, tc, bg);
     cv_text_c(15, ty_y(cy, lf), lf, d, T_INK, tc);
@@ -741,7 +741,7 @@ static void pv_strip(uint32_t k)
     uint16_t tc = mute ? T_DIM : T_TRK(k), bg = ux_mix(T_BG, mute ? T_TRK(k) : tc, sel ? 24 : 11);
     const aafont_t *tf = TY_TX, *lf = TY_LB;
     int32_t T = pv_mix_y(h), ly = T + tf->cap + 8, cs = h >= 80 ? 34 : 26;
-    char nm[20], b[12], d[2] = {(char)('1' + k), 0};
+    char nm[20], b[12], d[2] = {DOCK_BADGE(k), 0};
     t->peak = 0;
     m = mute ? 0 : meter_px(pk);
     if (m < pvm.meter[k] - 1)

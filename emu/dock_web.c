@@ -283,6 +283,8 @@ int main(int argc, char **argv)
     run_ms(300);
     tap_button(B_EDIT);
     run_ms(300);
+    web_enc(EN_K1 + 1u, 6);                         /* KNOB 2 turning: its cell fills with the member's colour */
+    run_ms(60);
     save_ppm(argc > 2 ? argv[2] : "build/emu/screen_edit.ppm");
     {   /* MASTER all the way down and up: the volume stays within the pot's range (no wrap) */
         int32_t qmax = 0;

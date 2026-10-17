@@ -15,6 +15,13 @@
 /* the parts, in order: MIDI channels 1..4 by default (G_ROUTE CH1-4) */
 enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };
 
+/* each part's badge letter, where Melodee drew a track's numeral */
+#if DOCK_BAND
+#define DOCK_BADGE(k) ("BKLD"[(k) & 3u])
+#else
+#define DOCK_BADGE(k) ((char)('1' + (k)))
+#endif
+
 /* Bass and Lead: the members that play one note at a time */
 #define DOCK_MONO_PART(part) (DOCK_BAND && ((part) == DOCK_BASS || (part) == DOCK_LEAD))
 

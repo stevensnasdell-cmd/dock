@@ -11,7 +11,6 @@
 #define DK_METER_X 204                                  /* the meter: five bars from here, in a row (x in the row) */
 #define DK_VOX_Y 212                                    /* the voices' bar */
 
-static const char DK_BADGE[NPART] = {'B', 'K', 'L', 'D'};
 static struct {
     uint32_t head, cell[4], row[NPART], vox;
     uint8_t meter[NPART];
@@ -112,7 +111,7 @@ static void dk_row(uint32_t k)
     uint32_t sel = k == song.sel, live = dk_sounding(k) != 0u, mute = trk[k].p[P_MUTE] != 0, lv = dk_level(k), sig;
     uint16_t tc = T_TRK(k), bg = sel ? ux_mix(T_SURF, tc, 18) : T_SURF;
     int32_t y = DK_ROW_Y + DK_ROW_DY * (int32_t)k, room = DK_METER_X - 6 - 36;
-    char d[2] = {DK_BADGE[k], 0};
+    char d[2] = {DOCK_BADGE(k), 0};
     const aafont_t *nf;
     sound_name(&trk[k], nm);
     if (!nm[0]) str_cpy(nm, ENGINES[eng_idx(trk[k].eng_req)]->name, sizeof nm);
@@ -168,6 +167,40 @@ static void dk_voices(void)
         }
     }
     cv_blit(0, DK_VOX_Y);
+}
+
+/* a page's header: the member's badge, the page's name, the member's voices sounding of its share; Melodee's header
+ * (draw_head) whenever it has something to say */
+static int dk_page_head(void)
+{
+    char chip[24], v[8], d[2] = {DOCK_BADGE(song.sel % NTRK), 0};
+    uint32_t k = song.sel % NTRK, sig;
+#if DOCK_VOICES
+    uint32_t share = dock_share[k];
+#else
+    uint32_t share = trk_nvoice(&trk[k]);
+#endif
+    uint16_t tc = T_TRK(k);
+    if (ui.msg_t || ui.layer || song.rec || chain.running || ui.bpm_t || seq_erase_active(TSEL) || head_waiting()) {
+        dk.head = 0;
+        return 0;
+    }
+    head_chip_text(chip);
+    fmt_int(v, (int32_t)dk_sounding(k));
+    str_cpy(v + str_len(v), "/", 2);
+    fmt_int(v + str_len(v), (int32_t)share);
+    sig = str_hash(str_hash(3u + k * 5u, chip), v) + ux.gen * 977u + ux.pal * 31u + ui.page * 2654435761u;
+    if (!ui.force && sig == dk.head)
+        return 1;
+    dk.head = sig;
+    ui.head_sig = 0;
+    cv_begin(240, H_HEAD, T_BG);
+    cv_rrect(6, 3, 24, 24, 6, tc, T_BG);
+    cv_text_c(18, ty_y(15, TY_TX), TY_TX, d, T_INK, tc);
+    cv_free_text(38, ty_y(H_HEAD / 2, TY_TX), ty_fit(TY_TX, chip, 236 - 38 - 44), chip, T_TEXT, T_BG, 236 - 38 - 44);
+    cv_text_on(232 - text_w(TY_MN, v), ty_y(H_HEAD / 2, TY_MN), TY_MN, v, T_MID, T_BG);
+    cv_blit(0, Y_HEAD);
+    return 1;
 }
 
 static void dock_home_draw(void)

@@ -159,6 +159,11 @@ Rules:
 
 ## 9. Open
 
+Built so far (firmware, `DOCK_BAND`): the fonts and DOCK palette, HOME (`ui_dock.c`), the pages' header (badge, page,
+voices), badge letters in place of track numerals, knob cells as cards with the turning one filled. Still to do on
+the pages: the picture on a `SURFACE` card, and values at 28 px in Unbounded (Melodee's values roll digit by digit at
+20 px; the roll needs reworking for the larger face). FX and LOOPER come with their features.
+
 - The drummer's colour (bone, proposed here) and its name on HOME (the groove's name, e.g. "Laid-back").
 - Whether HOME's knob strip shows PART or BAND with a mark, and how (DOCK.md §6).
 - The Line-up picker and the sound browser (not drawn yet).

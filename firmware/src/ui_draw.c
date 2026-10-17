@@ -224,8 +224,15 @@ static int head_toast(int32_t x)
         w += 40;                                        /* (a keycap: its pill wider than its word) */
     return m[0] && w > 236 - x;
 }
+#if DOCK_BAND
+static int dk_page_head(void);                          /* ui_dock.c: a page's header, Dock's (0: Melodee's says more) */
+#endif
 static void draw_head(void)
 {
+#if DOCK_BAND
+    if (!ui.home && dk_page_head())
+        return;
+#endif
     char b[16], chip[16];
     int32_t x;
     uint32_t low = !(usb.config && !usb.suspended) && batt_level() <= 1, msg = ui.msg_t || ui.layer;
@@ -435,9 +442,18 @@ static void draw_column(uint32_t c, const char *label0, const char *val0, const 
     strip = !snap && str_eq(key, ui.col[c]);
     if (strip && !ui.roll[c].from[0])
         return;
-    roll_bg = cbg;
+#if DOCK_BAND
+    /* Dock (DOCK_STYLE.md §5 knob cell): a SURF card, the label in MID; the knob turning fills its cell with the
+     * member's colour, label and value in INK */
+    cbg = hot ? T_THEME : T_SURF;
+    lc = vc == T_DIM ? T_DIM : hot ? T_INK : T_MID;
+    if (vc != T_DIM && hot)
+        vc = T_INK;
+#else
     if (hot && vc != T_DIM)                             /* the knob turning: its value in the track's colour */
         vc = lc;
+#endif
+    roll_bg = cbg;
     if (strip) {                                        /* rolling: the value strip only */
         cv_begin(COL_W, ROLL_H, cbg);
         cv_oy = -ROLL_Y;
@@ -451,8 +467,12 @@ static void draw_column(uint32_t c, const char *label0, const char *val0, const 
             ui.roll[c].from[0] = 0;
         str_cpy(ui.col[c], key, sizeof ui.col[c]);
         cv_begin(COL_W, COL_H, T_BG);
+#if DOCK_BAND
+        cv_rrect(0, 0, COL_W, COL_H, 8, cbg, T_BG);     /* (the card, filled while the knob turns) */
+#else
         if (hot)                                        /* (and a bar under it) */
             cv_rrect(COL_W / 2 - 14, COL_H - 4, 28, 3, 1, lc, T_BG);
+#endif
     }
     if (label[0] || val[0]) {
         /* the label: capitals in the track's colour, centred, rows 3..21; the value under it (the text face, rolling),
@@ -599,7 +619,7 @@ static void draw_foot(void)
         cv_key_row(8, 232, (H_FOOT - KC_PH) / 2, hints, 2, 3u, T_BG);
     } else {
         int32_t bw = b[0] ? text_w(TY_TX, b) + 12 : 0;
-        char d[2] = {(char)('1' + song.sel % NTRK), 0};
+        char d[2] = {DOCK_BADGE(song.sel % NTRK), 0};
         cv_rrect(4, H_FOOT / 2 - 11, 22, 22, 6, T_THEME, T_BG);   /* (as pv_sound_bar, the page at the right) */
         cv_text_c(15, ty_y(H_FOOT / 2, TY_LB), TY_LB, d, T_INK, T_THEME);
         cv_free_text(34, ty_y(H_FOOT / 2, TY_TX), TY_TX, pn[0] ? pn : ename, T_SEC, T_BG, 236 - bw - 34);

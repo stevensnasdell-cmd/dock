@@ -23,6 +23,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   its sound and a five-step meter of its level; the band's eight voices by owner, lit while sounding. Melodee's
   "MIDI IN -> T3" hint is off (in Dock every channel plays its member).
 
+- **Pages** (FOCUS): the header shows the member's badge, the page and its voices (`4/6`); badge letters replace
+  track numerals (sound bar, mixer, browser); knob cells are cards with the label in grey, the turning knob's cell
+  filled with the member's colour.
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the
