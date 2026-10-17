@@ -41,8 +41,8 @@ if [ "$1" = test ]; then
     exit 0
 fi
 
-emcc $FLAGS -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node -sSINGLE_FILE=1 \
-    -sEXPORTED_FUNCTIONS="$EXPORTS" -sEXPORTED_RUNTIME_METHODS='["HEAPF32"]' \
-    -sALLOW_MEMORY_GROWTH=0 -sINITIAL_MEMORY=16MB -sFILESYSTEM=0 --no-entry \
-    -o "$OUT/dock.mjs" emu/dock_wasm.c
-ls -la "$OUT/dock.mjs"
+# a plain wasm module, no Emscripten JS: the AudioWorklet loads it with emu/web/dock-core.js
+emcc $FLAGS -sSTANDALONE_WASM=1 --no-entry -sEXPORTED_FUNCTIONS="$EXPORTS" \
+    -sALLOW_MEMORY_GROWTH=0 -sINITIAL_MEMORY=16MB -o "$OUT/dock.wasm" emu/dock_wasm.c
+ls -la "$OUT/dock.wasm"
+node emu/web/node-check.mjs "$OUT/dock.wasm"

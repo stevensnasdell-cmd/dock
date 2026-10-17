@@ -1,0 +1,196 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dock emulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0e12; --panel: #16181f; --line: #262a35; --text: #e8e9ee; --dim: #8a8f9e;
+    --bass: #A98BFF; --keys: #46D39A; --lead: #FFB547; --drum: #ff6b7a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 'Space Grotesk', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 28px; margin: 0; letter-spacing: .02em; }
+  .tag { color: var(--dim); margin: 2px 0 24px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
+  button, select {
+    font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  }
+  button.primary { background: var(--keys); color: #0d0e12; border-color: var(--keys); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .status { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--dim); }
+  .strips { display: grid; gap: 10px; }
+  .strip {
+    display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c);
+    border-radius: 10px; padding: 12px 14px; cursor: pointer;
+  }
+  .strip.focus { outline: 2px solid var(--c); outline-offset: -1px; }
+  .badge { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
+           font-weight: 600; font-size: 20px; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+  .name { font-weight: 600; }
+  .meta { color: var(--dim); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .right { display: flex; gap: 12px; align-items: center; }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .25s; }
+  .led.on { background: var(--c); transition: none; box-shadow: 0 0 10px var(--c); }
+  .vox { display: flex; gap: 3px; }
+  .vox i { width: 9px; height: 18px; border-radius: 2px; background: var(--line); }
+  .vox i.on { background: var(--c); }
+  .help { margin-top: 24px; color: var(--dim); font-size: 13px; }
+  kbd { font-family: 'JetBrains Mono', monospace; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 4px; padding: 1px 5px; color: var(--text); }
+  @media (max-width: 520px) { .strip { grid-template-columns: 36px 1fr; } .right { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>DOCK</h1>
+  <p class="tag">Onboard a band. Emulator: the FM-1 firmware DSP running in WebAssembly.</p>
+
+  <div class="bar">
+    <button id="start" class="primary">Start audio</button>
+    <select id="midiIn" disabled><option>MIDI input…</option></select>
+    <button id="panic" disabled>Panic</button>
+    <span id="status" class="status">stopped</span>
+  </div>
+
+  <div class="strips" id="strips"></div>
+
+  <p class="help">
+    Circuit Tracks: Synth 1 → ch 1 (Bass), Synth 2 → ch 2 (Keys), MIDI track → ch 3 (Lead). Ch 4 is Melodee's drum part for now.<br>
+    Computer keys play the focused member (click a strip or press <kbd>1</kbd>–<kbd>4</kbd>):
+    <kbd>A</kbd>–<kbd>K</kbd> white, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> black, <kbd>Z</kbd>/<kbd>X</kbd> octave.<br>
+    Sounds are Melodee's power-on defaults until Dock's own line-ups exist.
+  </p>
+</main>
+
+<script type="module">
+const MEMBERS = [
+  { key: 'B', name: 'Bass', sound: 'PROPHET · Funk bass', ch: 1, c: 'var(--bass)' },
+  { key: 'K', name: 'Keys', sound: 'FM6 (placeholder for JUNO / EP)', ch: 2, c: 'var(--keys)' },
+  { key: 'L', name: 'Lead', sound: 'SID (placeholder)', ch: 3, c: 'var(--lead)' },
+  { key: 'D', name: 'Drums', sound: '808 DRUM (Melodee part 4)', ch: 4, c: 'var(--drum)' },
+];
+const MAX_VOX = 8;
+const $ = (id) => document.getElementById(id);
+let ctx, node, focus = 0, octave = 0;
+
+// --- strips
+const strips = MEMBERS.map((m, i) => {
+  const el = document.createElement('div');
+  el.className = 'strip';
+  el.style.setProperty('--c', m.c);
+  el.innerHTML = `<div class="badge">${m.key}</div>
+    <div><div class="name">${m.name}</div><div class="meta">ch ${m.ch} · ${m.sound}</div></div>
+    <div class="right"><div class="vox">${'<i></i>'.repeat(MAX_VOX)}</div><div class="led"></div></div>`;
+  el.onclick = () => setFocus(i);
+  $('strips').append(el);
+  return { el, led: el.querySelector('.led'), vox: [...el.querySelectorAll('.vox i')] };
+});
+function setFocus(i) { focus = i; strips.forEach((s, k) => s.el.classList.toggle('focus', k === i)); }
+setFocus(0);
+
+function flash(ch) {
+  const s = strips[ch]; if (!s) return;
+  s.led.classList.add('on');
+  clearTimeout(s.t); s.t = setTimeout(() => s.led.classList.remove('on'), 60);
+}
+
+function send(status, d1, d2) {
+  if (!node) return;
+  node.port.postMessage({ midi: [status, d1, d2] });
+  if ((status & 0xf0) === 0x90 && d2 > 0) flash(status & 0x0f);
+}
+
+// --- audio
+$('start').onclick = async () => {
+  $('start').disabled = true;
+  try {
+    ctx = new AudioContext({ sampleRate: 44100, latencyHint: 'interactive' });
+    await ctx.audioWorklet.addModule('dock-worklet.js');
+    node = new AudioWorkletNode(ctx, 'dock', { numberOfInputs: 0, outputChannelCount: [2] });
+    node.connect(ctx.destination);
+    node.port.onmessage = ({ data }) => {
+      if (data.ready) {
+        $('status').textContent = `running · firmware ${data.rate} Hz · context ${data.ctxRate} Hz · ` +
+          `latency ${Math.round((ctx.baseLatency + (ctx.outputLatency || 0)) * 1000)} ms`;
+        $('panic').disabled = false;
+        $('start').textContent = 'Running';
+      } else if (data.voices) {
+        data.voices.forEach((n, k) => strips[k]?.vox.forEach((v, i) => v.classList.toggle('on', i < n)));
+      } else if (data.error) {
+        $('status').textContent = 'wasm error: ' + data.error;
+      }
+    };
+    const wasm = await (await fetch('../../build/emu/dock.wasm')).arrayBuffer();
+    node.port.postMessage({ wasm }, [wasm]);
+    await ctx.resume();
+    initMidi();
+  } catch (e) {
+    $('status').textContent = 'error: ' + e.message;
+    $('start').disabled = false;
+  }
+};
+
+$('panic').onclick = () => {
+  for (let ch = 0; ch < 4; ch++) for (let n = 0; n < 128; n++) send(0x80 | ch, n, 0);
+};
+
+// --- Web MIDI
+let midiAccess, currentIn;
+async function initMidi() {
+  if (!navigator.requestMIDIAccess) { $('midiIn').innerHTML = '<option>No Web MIDI (use Chrome)</option>'; return; }
+  try { midiAccess = await navigator.requestMIDIAccess(); }
+  catch { $('midiIn').innerHTML = '<option>MIDI permission denied</option>'; return; }
+  midiAccess.onstatechange = fillInputs;
+  fillInputs();
+}
+function fillInputs() {
+  const sel = $('midiIn'), prev = sel.value;
+  const ins = [...midiAccess.inputs.values()];
+  sel.innerHTML = ins.length ? '' : '<option>No MIDI inputs</option>';
+  for (const i of ins) sel.add(new Option(i.name, i.id));
+  sel.disabled = !ins.length;
+  const pick = ins.find((i) => i.id === prev) || ins.find((i) => /circuit/i.test(i.name)) || ins[0];
+  if (pick) { sel.value = pick.id; useInput(pick.id); }
+}
+$('midiIn').onchange = (e) => useInput(e.target.value);
+function useInput(id) {
+  if (currentIn) currentIn.onmidimessage = null;
+  currentIn = midiAccess.inputs.get(id);
+  if (!currentIn) return;
+  currentIn.onmidimessage = ({ data }) => {
+    if (data[0] >= 0xf0) return;               // clock / sysex: later (SEQ page)
+    send(data[0], data[1] ?? 0, data[2] ?? 0);
+  };
+}
+
+// --- computer keyboard
+const KEYS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12 };
+const down = new Map();
+addEventListener('keydown', (e) => {
+  if (e.repeat || e.metaKey || e.ctrlKey || e.target.tagName === 'SELECT') return;
+  const k = e.key.toLowerCase();
+  if (k >= '1' && k <= '4') return setFocus(+k - 1);
+  if (k === 'z') { octave = Math.max(-3, octave - 1); return; }
+  if (k === 'x') { octave = Math.min(3, octave + 1); return; }
+  if (k in KEYS && !down.has(k)) {
+    const base = focus === 0 ? 36 : 60;
+    const note = base + 12 * octave + KEYS[k];
+    down.set(k, [focus, note]);
+    send(0x90 | focus, note, 100);
+  }
+});
+addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase(), held = down.get(k);
+  if (held) { send(0x80 | held[0], held[1], 0); down.delete(k); }
+});
+</script>
+</body>
+</html>
