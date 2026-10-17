@@ -249,7 +249,7 @@ static void p5_legato(track_t *t,voice_t *v)
 static void p5_track_accept(track_t *t)
 {
     const uint8_t *p=p5_patch_of(t)->raw;
-    t->p[P_VOICE]=DOCK_MONO_PART((uint32_t)(t-trk))?V_LEGATO:p[P5_UNISON]?V_UNISON:V_POLY;   /* Dock: Bass, Lead */
+    t->p[P_VOICE]=DOCK_MONO_PART((uint32_t)(t-trk))?DOCK_MONO_MODE:p[P5_UNISON]?V_UNISON:V_POLY;   /* Dock: Bass, Lead */
     t->p[P_PRIO]=DOCK_MONO_PART((uint32_t)(t-trk))?0:p[P5_RETRIGGER]<2u?1:0;   /* Dock: LAST, as a sequencer slides */
     t->p[P_DETUNE]=clamp(p[P5_UNISON_DETUNE],0,7)*127/7;
     t->p[P_ALLOC]=1; /* repeated keys reuse a voice, as the original does */

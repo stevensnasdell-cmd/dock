@@ -80,6 +80,21 @@ int main(void)
     check("bass moves to its new note, still 1 voice", held(bass, 38) && sounding(bass) == 1u);
     check("keys and lead keep theirs", sounding(keys) == 6u && held(lead, 72));
 
+    {   /* Bass and Lead: an overlapping note (a tie, a slide) strikes again, as a player's next note does */
+        uint32_t age0;
+        host_preset(lead, ENGI_PHYS, PHYS_SURF);
+        lead->p[P_VOICE] = DOCK_MONO_MODE;
+        blocks(20);
+        trk_note_on(lead, 72, 100);
+        blocks(10);
+        age0 = lead->v[0].age;
+        trk_note_on(lead, 74, 100);                   /* before 72's note-off: overlapping */
+        trk_note_off(lead, 72);
+        blocks(4);
+        check("an overlapping note on the Lead strikes again (the pluck plucks)", lead->v[0].age != age0 && held(lead, 74));
+        trk_note_off(lead, 74);
+    }
+
     printf(fails ? "dock voices: %d FAILED\n" : "dock voices: all passed\n", fails);
     return fails != 0;
 }

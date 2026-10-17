@@ -30,10 +30,11 @@ This file is the brief. Build from it; update it when a decision changes.
 
 | Member | Default MIDI ch | Mode | Voices | Colour |
 |---|---|---|---|---|
-| **B — Bass** | 1 (Circuit Synth 1) | Mono, legato, last-note priority, optional glide | 1 | Violet `#A98BFF` |
+| **B — Bass** | 1 (Circuit Synth 1) | Mono, every note strikes, last-note priority, glide only on ties/slides | 1 | Violet `#A98BFF` |
 | **K — Keys** | 2 (Circuit Synth 2) | Poly | 6 | Green `#46D39A` |
-| **L — Lead** | 3 (Circuit MIDI track) | Mono, legato, last-note priority, optional glide | 1 | Amber `#FFB547` |
+| **L — Lead** | 3 (Circuit MIDI track) | Mono, every note strikes, last-note priority, glide only on ties/slides | 1 | Amber `#FFB547` |
 
+- Bass and Lead strike every note (Melodee's MONO), not legato: a legato overlap (a sequencer's tie) bent a ringing pluck instead of plucking again and skipped a bass's filter snap. A sound's glide moves only between overlapping notes.
 - Last-note priority on Bass and Lead: a sequencer's slide sends the new note before the old note-off, so the new note must win (a Prophet's own low-note priority would lag rising lines).
 - 8 voices total, **reserved per member** (user-adjustable, e.g. 2/5/1). Reserved voices are never stolen by another member.
 - If a member exceeds its own share it steals from itself (oldest released note first).

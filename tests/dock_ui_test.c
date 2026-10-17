@@ -22,14 +22,14 @@ int main(void)
     dcheck("four parts at power-on, whatever the song says", trk_n() == 4u);
     song.ntrk = 1;
     dcheck("  (a song of one track still has four)", trk_n() == 4u);
-    dcheck("Bass and Lead mono legato, Keys poly", trk[DOCK_BASS].p[P_VOICE] == V_LEGATO &&
-                                                    trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO &&
+    dcheck("Bass and Lead mono (every note strikes), Keys poly", trk[DOCK_BASS].p[P_VOICE] == DOCK_MONO_MODE &&
+                                                    trk[DOCK_LEAD].p[P_VOICE] == DOCK_MONO_MODE &&
                                                     trk[DOCK_KEYS].p[P_VOICE] == V_POLY);
     apply_preset_to(&trk[DOCK_BASS], 3);          /* PROPHET Forever Keys: a poly preset onto the Bass */
     apply_preset_to(&trk[DOCK_LEAD], 3);
     apply_preset_to(&trk[DOCK_KEYS], 3);
-    dcheck("a poly sound loaded on Bass and Lead plays mono legato", trk[DOCK_BASS].p[P_VOICE] == V_LEGATO &&
-                                                                      trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO);
+    dcheck("a poly sound loaded on Bass and Lead plays mono", trk[DOCK_BASS].p[P_VOICE] == DOCK_MONO_MODE &&
+                                                                      trk[DOCK_LEAD].p[P_VOICE] == DOCK_MONO_MODE);
     dcheck("  and stays poly on Keys", trk[DOCK_KEYS].p[P_VOICE] == V_POLY);
     dcheck("Bass and Lead: last-note priority (a sequencer's slides)", trk[DOCK_BASS].p[P_PRIO] == 0 &&
                                                                          trk[DOCK_LEAD].p[P_PRIO] == 0);
@@ -93,13 +93,13 @@ int main(void)
             for (k = 0; k < NPART; k++)
                 loads &= trk[k].eng_req == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][0] &&
                          trk[k].preset == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][1];
-            mono &= trk[DOCK_BASS].p[P_VOICE] == V_LEGATO && trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO;
+            mono &= trk[DOCK_BASS].p[P_VOICE] == DOCK_MONO_MODE && trk[DOCK_LEAD].p[P_VOICE] == DOCK_MONO_MODE;
         }
         dcheck("SELECT steps through all five, each loading its four sounds", loads && dock_lineup == 0u);
         dock_lineup_turn(-1);
         dcheck("  and back round from Yacht to Goth", dock_lineup == DOCK_NLINEUPS - 1u &&
                                                      trk[DOCK_KEYS].eng_req == DOCK_LINEUPS[DOCK_NLINEUPS - 1u].snd[1][0]);
-        dcheck("Bass and Lead stay mono legato in every line-up", mono);
+        dcheck("Bass and Lead stay mono in every line-up", mono);
     }
 
     {   /* Mod and Hot: the organ and PLUCK, by name, as SELECT loads them */
@@ -117,7 +117,7 @@ int main(void)
                str_eq(nm[DOCK_KEYS], "MOD HAMMOND") && trk[DOCK_KEYS].p[P_E7] > 0 && trk[DOCK_KEYS].p[P_E6] > 0);
         dcheck("Mod: Lead WHEEL VOX COMBO, with vibrato, mono legato", trk[DOCK_LEAD].eng_req == ENGI_WHEEL &&
                str_eq(nm[DOCK_LEAD], "VOX COMBO") && trk[DOCK_LEAD].p[P_LD_PIT] > 0 &&
-               trk[DOCK_LEAD].p[P_VOICE] == V_LEGATO);
+               trk[DOCK_LEAD].p[P_VOICE] == DOCK_MONO_MODE);
         while (dock_lineup != hot) { dock_lineup_turn(1); frame(); }
         for (i = 0; i < NPART; i++) str_cpy(nm[i], eng_preset(ENGINES[trk[i].eng_req], trk[i].preset)->name, 21);
         dcheck("Hot: Bass PLUCK UPRIGHT, Lead PLUCK SURF TWANG", trk[DOCK_BASS].eng_req == ENGI_PHYS &&

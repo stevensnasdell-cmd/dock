@@ -110,7 +110,7 @@ int main(int argc, char **argv)
             host_preset(&trk[DOCK_LEAD], ENGI_PHYS, PHYS_SURF);
         }
         if (pass)                                       /* (as a load sets them: dock.h DOCK_LOAD_VOICE) */
-            trk[DOCK_BASS].p[P_VOICE] = trk[DOCK_LEAD].p[P_VOICE] = V_LEGATO;
+            trk[DOCK_BASS].p[P_VOICE] = trk[DOCK_LEAD].p[P_VOICE] = DOCK_MONO_MODE;
         while (f < total) {
             if (f >= step * eighth && step < 16u) {
                 if (held)

@@ -39,10 +39,14 @@ enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };
 /* Bass and Lead: the members that play one note at a time */
 #define DOCK_MONO_PART(part) (DOCK_BAND && ((part) == DOCK_BASS || (part) == DOCK_LEAD))
 
+/* Bass and Lead play MONO: every note strikes again (a pluck plucks, a filter snaps), and under DOCK_BAND their glide
+ * moves only between overlapping notes (a sequencer's tie or slide: voice.c), as a player slides */
+#define DOCK_MONO_MODE V_MONO
+
 /* the voice mode a sound load sets (pr_mono: the preset's own MONO flag): Bass and Lead always mono legato */
 #if DOCK_BAND
 #define DOCK_LOAD_VOICE(part, pr_mono) \
-    (((part) == DOCK_BASS || (part) == DOCK_LEAD) ? V_LEGATO : (pr_mono) ? V_LEGATO : V_POLY)
+    (((part) == DOCK_BASS || (part) == DOCK_LEAD) ? DOCK_MONO_MODE : (pr_mono) ? V_LEGATO : V_POLY)
 #else
 #define DOCK_LOAD_VOICE(part, pr_mono) ((pr_mono) ? V_LEGATO : V_POLY)
 #endif

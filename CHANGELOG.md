@@ -129,6 +129,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Bass and Lead strike every note.** They were legato, so a note overlapping the last (the Circuit's ties and
+  slides) didn't re-attack: Hot's Surf Twang and Upright bent instead of plucking, plucky basses lost their snap, and
+  Yacht's Silk Lead glided into every note. Now MONO: every note strikes, and a sound's glide moves only between
+  overlapping notes. Tested in `tests/dock_voice_test.c`.
 - **Sounds picked by ear:** Kraut's bass Rubber Bumper (a rubbery filter snap), Mod's bass CZ Elec. Bass 1 (a fingered
   electric), Goth's bass Sticky Plucks (high and picked), Goth's lead Faint Memories (glassy). Shortlisted by
   measurement (tuning, filter snap, sustain), chosen by ear; trims keep them level with the band.
