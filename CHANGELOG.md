@@ -5,6 +5,13 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 ## Unreleased
 
+### Design
+- **Style guide** `docs/design/DOCK_STYLE.md`: colour = band member, shapes not numbers, calm screens, nothing under
+  16 px or cut; tokens, type roles, the 240 × 240 grid, components, and what changed from the scamps and why.
+- Fonts: Space Grotesk (words), Unbounded (big numbers, the DOCK wordmark), Space Mono (data), in `assets/fonts/`.
+- Reference screens HOME, FOCUS, FX, LOOPER at 240 × 240 (`docs/design/dock/ref/`, from `tools/dock_refs.py`,
+  which flags any text that doesn't fit).
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the

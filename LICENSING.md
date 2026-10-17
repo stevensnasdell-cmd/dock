@@ -10,6 +10,10 @@ Dock modifications: Copyright (C) 2026 Steven Snasdell
 The emulator page `emu/panel/` is from Felucca's browser build (GPL-3.0, Leo Kuroshita, Hügelton Instruments) and
 keeps its notice; its DotGothic16 font is SIL OFL 1.1 (`emu/panel/fonts/OFL.txt`).
 
+Dock's UI fonts, all SIL OFL 1.1, licences beside them in `assets/fonts/`: Space Grotesk (The Space Grotesk Project
+Authors, `OFL-SpaceGrotesk.txt`), Unbounded (The Unbounded Project Authors, `OFL-Unbounded.txt`), Space Mono (The Space
+Mono Project Authors, `OFL-SpaceMono.txt`).
+
 ---
 
 # Melodee licensing

@@ -157,12 +157,18 @@ A preset rhythm box in the spirit of the Ace Tone, Maestro Rhythm King and organ
 
 ## 9. Visual design
 
-- Dark ground, one sans (Space Grotesk-style) + one mono for numbers, generous space.
+**The style guide is [docs/design/DOCK_STYLE.md](docs/design/DOCK_STYLE.md)** (tokens, type, grid, components, the four
+reference screens at 240 × 240). Summary:
+
+- Fonts: **Space Grotesk** for words, **Unbounded** for big numbers and the DOCK wordmark, **Space Mono** for data.
+  Sizes from Melodee's on-device "large type": 16 / 20 / 28 / 48 px, nothing smaller.
+- Dark ground, generous space, calm: no hint rows, no tabs, nothing cut, nothing covering the picture.
 - **Colour = band member** everywhere: strips, keys, LEDs, knob cards. Match Circuit colours where sensible.
 - Four knob cards always visible; big value pops up while turning, then fades.
 - Draw shapes (envelopes, filter, loop progress), not numbers.
 - Home = three member strips (sound, engine, channel, activity, meter, loop state) + 8 voice squares coloured by owner.
-- Mockups: the "Dock FM-1 Screens" design canvas (Home, Focused member, FX layer, Looper).
+- Mockups: the "Dock FM-1 Screens" design canvas (Home, Focused member, FX layer, Looper), translated to the square screen as `docs/design/dock/ref/` (`tools/dock_refs.py`).
+- Drummer colour: bone `#E9DFC7` (proposed).
 
 ## 10. Phases
 
