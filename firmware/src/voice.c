@@ -216,6 +216,57 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
     return best;
 }
 
+/* ---------------------------------------------- Dock: voices by member --- */
+/* Dock (DOCK.md §3) replaces the shared budget: each band member owns a share of voices that no other part can take,
+ * and a member over its share steals from itself (oldest released note first, then its oldest held, the lowest held
+ * note last). The drummer (DOCK_DRUM_PART) plays in its own lane of DOCK_DRUM_LANE hits, outside the band's voices:
+ * it never takes one of theirs and they never take one of its. Copyright (C) 2026 Steven Snasdell. */
+#ifndef DOCK_VOICES
+#define DOCK_VOICES 1
+#endif
+#if DOCK_VOICES
+#define DOCK_DRUM_PART 3u
+#define DOCK_DRUM_LANE 6u
+static uint8_t dock_share[NPART] = {1u, 6u, 1u, DOCK_DRUM_LANE};   /* Bass, Keys, Lead (8 voices), the drummer */
+
+static uint32_t dock_part(const track_t *t) { return (uint32_t)(t - trk) % NPART; }
+
+static uint32_t dock_busy(const track_t *t)             /* the part's sounding voices (not fading) */
+{
+    uint32_t i, n = 0;
+    for (i = 0; i < NVOICE; i++)
+        n += t->v[i].active && t->v[i].stage != 4u;
+    return n;
+}
+
+static int dock_full(const track_t *t) { return dock_busy(t) + 1u > dock_share[dock_part(t)]; }
+
+/* the part's own voice to give up for a new one; soft: only released voices and extra UNISON voices.
+ * NVOICE = none */
+static uint32_t dock_victim(const track_t *t, int soft)
+{
+    uint32_t mode = trk_vmode(t), low = mode == V_POLY ? lowest_held(t) : NVOICE, i, best = NVOICE, cat = 5, c;
+    for (i = 0; i < NVOICE; i++) {
+        const voice_t *v = &t->v[i];
+        if (!v->active || v->stage == 4u)
+            continue;
+        if (!v->gate)
+            c = 1;                                      /* released */
+        else if (mode != V_POLY && i > 0)
+            c = 2;                                      /* extra UNISON, or left by a mode change */
+        else if (soft)
+            continue;
+        else
+            c = i != low ? 3u : 4u;                     /* held; the lowest (the bass of a chord) last */
+        if (c < cat || (c == cat && v->age < t->v[best].age)) {
+            cat = c;
+            best = i;
+        }
+    }
+    return best;
+}
+#endif
+
 static uint32_t voice_kills;                            /* voices given up (budget, overload): console, hostsim */
 static uint32_t voice_kills_part[NPART];                /* identify the audible victim, not only total load */
 static void voice_kill(voice_t *v)                      /* fade out over the next block (env_tick stage 4) */
@@ -236,6 +287,15 @@ static void voice_capacity_kill(voice_t *v)
 /* the budget is full: free room for a voice of part t. 0 = nothing to take (soft) */
 static int voice_room(track_t *t, int soft)
 {
+#if DOCK_VOICES
+    while (dock_full(t)) {                              /* Dock: room only within the part's own share */
+        uint32_t k = dock_victim(t, soft);
+        if (k == NVOICE)
+            return 0;
+        voice_capacity_kill(&t->v[k]);
+    }
+    return 1;
+#endif
     while (voices_busy() + voice_units(t) > voice_budget()) {
         track_t *vp = 0;
         uint32_t k = voice_victim(t, soft, &vp);
@@ -283,6 +343,14 @@ static voice_t *voice_alloc(track_t *t, uint32_t note)
             return voice_reuse(t, &t->v[i]);
         nfree += !t->v[i].active;
     }
+#if DOCK_VOICES
+    if (nfree && dock_full(t)) {                        /* Dock: over its share, the part restarts its own voice */
+        uint32_t k = dock_victim(t, 0);
+        if (k < np)
+            return &t->v[k];
+    }
+    nfree = 0;                                          /* (skips the shared budget below) */
+#endif
     while (nfree && voices_busy() + voice_units(t) > voice_budget()) {
         track_t *vp = 0;
         uint32_t k = voice_victim(t, 0, &vp);
