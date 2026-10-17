@@ -50,6 +50,10 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 - Every screen passes Melodee's layout lint in Space Grotesk (0 findings over 261 screens x 9 palettes): knob
   labels sit 2 px higher so Space Grotesk's Q tail clears an on/off chip. `tests/dock_tests.sh` runs the lint.
 
+- **Which engine?** Choosing a sound on HOME (PRESETS, a Program Change from the Circuit, an undo) swaps the knob
+  strip for 2 s for a browse strip: the engine in the member's colour, the category, the place in the list
+  ("PROPHET BRASS 7 / 337"). Long Prophet names show whole on HOME ("Formant Seraphim", not "Formant Seraphi").
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the

@@ -286,6 +286,20 @@ int main(int argc, char **argv)
     web_enc(EN_K1 + 1u, 6);                         /* KNOB 2 turning: its cell fills with the member's colour */
     run_ms(60);
     save_ppm(argc > 2 ? argv[2] : "build/emu/screen_edit.ppm");
+    {   /* PRESETS on HOME: the browse strip (the engine, the place) for a while, then the knobs again */
+        int shown, gone;
+        tap_button(B_HOME);
+        run_ms(200);
+        web_enc(EN_PRESET, 1);
+        run_ms(150);
+        shown = dk.strip != 0;
+        run_ms(DK_BROWSE_MS + 500u);
+        gone = dk.strip == 0;
+        printf("selftest: PRESETS shows the engine strip (%s), then the knobs (%s)\n", shown ? "ok" : "MISSING",
+               gone ? "ok" : "STUCK");
+        if (!shown || !gone)
+            return 1;
+    }
     {   /* MASTER all the way down and up: the volume stays within the pot's range (no wrap) */
         int32_t qmax = 0;
         for (k = 0; k <= 1023u; k += 31u) {

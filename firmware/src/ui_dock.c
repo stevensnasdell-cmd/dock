@@ -11,10 +11,31 @@
 #define DK_METER_X 204                                  /* the meter: five bars from here, in a row (x in the row) */
 #define DK_VOX_Y 212                                    /* the voices' bar */
 
+#define DK_BROWSE_MS 2000u                              /* the browse strip stays this long after a sound changes */
 static struct {
-    uint32_t head, cell[4], row[NPART], vox;
+    uint32_t head, cell[4], row[NPART], vox, strip;
+    uint32_t snd, browse_ms;                            /* the selected member's sound; when it last changed (| 1) */
     uint8_t meter[NPART];
 } dk;
+
+/* part k's sound as HOME shows it: the one the browser shows while it waits to load it (*pending), else the loaded one,
+ * in full (a Prophet program's name too: sound_name keeps 15 letters) */
+static void dk_name(uint32_t k, char *nm, uint32_t size, int *pending)
+{
+    *pending = k == song.sel && browse_pending();
+    nm[0] = 0;
+    if (*pending) {
+        char tag[6];
+        uint32_t kk, src = browse_shown(&kk);
+        entry_label(src, kk, tag, nm);
+        if (!nm[0]) str_cpy(nm, tag, size);
+    } else if (trk[k].eng_req == ENGI_PROPHET) {
+        p5_short_name(&trk[k], nm, size);
+    } else {
+        sound_name(&trk[k], nm);
+    }
+    if (!nm[0]) str_cpy(nm, ENGINES[eng_idx(trk[k].eng_req)]->name, size);
+}
 
 static uint16_t dk_idle(uint16_t c) { return ux_mix(T_BG, c, 55); }   /* a silent member (style guide: 55 %) */
 
@@ -113,10 +134,10 @@ static void dk_row(uint32_t k)
     int32_t y = DK_ROW_Y + DK_ROW_DY * (int32_t)k, room = DK_METER_X - 6 - 36;
     char d[2] = {DOCK_BADGE(k), 0};
     const aafont_t *nf;
-    sound_name(&trk[k], nm);
-    if (!nm[0]) str_cpy(nm, ENGINES[eng_idx(trk[k].eng_req)]->name, sizeof nm);
+    int pending;
+    dk_name(k, nm, sizeof nm, &pending);
     nf = ty_fit(TY_TX, nm, room);
-    sig = str_hash(1u + sel * 2u + live * 4u + mute * 8u, nm) + ux.gen * 977u + ux.pal * 31u;
+    sig = str_hash(1u + sel * 2u + live * 4u + mute * 8u + (uint32_t)pending * 16u, nm) + ux.gen * 977u + ux.pal * 31u;
     if (!ui.force && sig == dk.row[k]) {
         if (lv != dk.meter[k]) {                        /* the meter alone */
             dk.meter[k] = (uint8_t)lv;
@@ -132,7 +153,8 @@ static void dk_row(uint32_t k)
     cv_rrect(0, 0, BOX_W, DK_ROW_H, 7, bg, T_BG);
     cv_rrect(3, 3, 24, 24, 6, live || sel ? tc : dk_idle(tc), bg);
     cv_text_c(15, ty_y(15, TY_TX), TY_TX, d, T_INK, live || sel ? tc : dk_idle(tc));
-    cv_free_text(34, ty_y(DK_ROW_H / 2, nf), nf, nm, mute ? T_DIM : live || sel ? T_TEXT : T_MID, bg, room);
+    cv_free_text(34, ty_y(DK_ROW_H / 2, nf), nf, nm, pending ? T_ACCENT : mute ? T_DIM : live || sel ? T_TEXT : T_MID, bg,
+                 room);
     dk_meter(k, tc, bg, DK_METER_X, 0);
     cv_blit(BOX_X, (uint32_t)y);
 }
@@ -203,13 +225,69 @@ static int dk_page_head(void)
     return 1;
 }
 
+/* the browse strip, in the knob strip's place while a sound is chosen (PRESETS, a Program Change, an undo) and
+ * DK_BROWSE_MS after: the engine in the member's colour, the category, the place in the list */
+static int dk_browsing(void)
+{
+    const track_t *t = TSEL;
+    uint32_t snd = (uint32_t)t->eng_req * 65537u + t->preset * 257u + t->user * 31u + t->user_native * 7u + song.sel * 3u;
+    if (dk.snd && snd != dk.snd)
+        dk.browse_ms = fm1_ms | 1u;
+    dk.snd = snd;
+    if (browse_pending())
+        dk.browse_ms = fm1_ms | 1u;
+    return dk.browse_ms && fm1_ms - (dk.browse_ms & ~1u) < DK_BROWSE_MS;
+}
+
+static void dk_browse_strip(void)
+{
+    char where[16], line[40];
+    uint32_t kk, src, total, cur = preset_pos(&total), e, cat, sig;
+    uint16_t mc = T_TRK(song.sel);
+    int32_t x;
+    if (browse_pending())
+        src = browse_shown(&kk);
+    else
+        stage_entry(song.sel, &src, &kk);
+    e = eng_idx(src_engine(src, kk));
+    cat = entry_cat(src, kk) % CAT_N;
+    fmt_int(where, (int32_t)cur + 1);
+    str_cpy(where + str_len(where), " / ", 4);
+    fmt_int(where + str_len(where), (int32_t)total);
+    str_cpy(line, cat && cat != CAT_OTHER ? CAT_NAME[cat] : "", sizeof line);
+    sig = str_hash(str_hash(e * 13u + song.sel, line), where) + ux.gen * 977u + ux.pal * 31u;
+    if (!ui.force && sig == dk.strip)
+        return;
+    dk.strip = sig;
+    memset(dk.cell, 0, sizeof dk.cell);                 /* (the knobs draw themselves whole when they come back) */
+    cv_begin(BOX_W, CARD_H, T_BG);
+    cv_rrect(0, 0, BOX_W, CARD_H, 8, T_SURF, T_BG);
+    x = cv_text_on(10, ty_y(17, TY_LB), TY_LB, ENGINES[e]->name, mc, T_SURF);
+    if (line[0])
+        cv_free_text(x + 10, ty_y(17, TY_LB), TY_LB, line, T_MID, T_SURF, BOX_W - x - 20);
+    cv_text_on(10, ty_y(35, TY_MN), TY_MN, where, T_MID, T_SURF);
+    cv_blit(BOX_X, Y_LABEL);
+}
+
 static void dock_home_draw(void)
 {
     uint32_t k;
-    if (ui.force)
+    if (ui.force) {                                     /* (all drawn again; what the sound was and when it changed kept:
+                                                         * a load forces a redraw) */
+        uint32_t snd = dk.snd, bms = dk.browse_ms;
         memset(&dk, 0, sizeof dk);
+        dk.snd = snd;
+        dk.browse_ms = bms;
+    }
     dk_head();
-    dk_cells();
+    if (dk_browsing())
+        dk_browse_strip();
+    else {
+        if (dk.strip)                                   /* (the strip's gone: the gaps between the cells too) */
+            lcd_fill(BOX_X, Y_LABEL, BOX_W, CARD_H, T_BG);
+        dk.strip = 0;
+        dk_cells();
+    }
     if (!ui.force && (ui.frame & 1u))
         return;
     for (k = 0; k < NPART; k++)
