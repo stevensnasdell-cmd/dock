@@ -18,6 +18,11 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 - **DOCK palette**, the default: the style guide's tokens, the band's colours as the four track colours (passes every
   contrast check). DAY moves up to second, beside it.
 
+- **HOME** to the reference (`firmware/src/ui_dock.c`, in Melodee's Stage's place): the DOCK wordmark, the
+  Line-up, the clock and the BPM; the knob strip always there; a row per part with its badge (dimmed while silent),
+  its sound and a five-step meter of its level; the band's eight voices by owner, lit while sounding. Melodee's
+  "MIDI IN -> T3" hint is off (in Dock every channel plays its member).
+
 ### Band
 - **The band** (`firmware/src/dock.h`, `DOCK_BAND`): always four parts on MIDI channels 1–4 (Bass, Keys, Lead,
   Drums); Bass and Lead play mono legato whatever sound is loaded; power-on sounds are Yacht stand-ins until the

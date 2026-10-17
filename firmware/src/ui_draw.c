@@ -610,6 +610,9 @@ static void draw_foot(void)
 }
 #include "ui_sections.c"                                /* the EDIT pages in sections, the map */
 #include "ui_stage.c"                                   /* Stage (HOME) */
+#if DOCK_BAND
+#include "ui_dock.c"                                    /* Dock's HOME, in Stage's place (docs/design/DOCK_STYLE.md) */
+#endif
 #include "ui_view.c"                                    /* HOME's second page: the chord, pictures of what plays */
 #include "ui_browser.c"                                 /* SAVE > PRESETS, the sound browser */
 #include "ui_patterns.c"                                /* SEQ > PATTERNS, SEQ > SONG */
@@ -1075,6 +1078,13 @@ static void draw_page(void)
             draw_head();
             patterns_draw();
         }
+#if DOCK_BAND
+    } else if (ui.home && !ui.home_pg) {                /* Dock's HOME: its header, knobs, rows and voices (ui_dock.c) */
+        if (ui.force)
+            draw_frame(1);
+        melodee_dbg.stage = 3;
+        dock_home_draw();
+#endif
     } else {
         if (ui.force)
             draw_frame(ui.home);

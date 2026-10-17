@@ -1654,6 +1654,8 @@ static void ui_notices(void)
     static uint32_t midi_t, midi_last;
     if (motion_full) { motion_full = 0; ui_message("MOTION FULL"); }
     if (recording_quant_blocked) { recording_quant_blocked = 0; ui_message("QNT STEP OCCUPIED"); }
+    if (DOCK_BAND)
+        midi_hint = 0;                                  /* Dock: the Circuit plays every member at once; nothing to say */
     if (midi_hint) {                                    /* MIDI notes into a track that is not selected */
         uint32_t h = midi_hint;
         midi_hint = 0;

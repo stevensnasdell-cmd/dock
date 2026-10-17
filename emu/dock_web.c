@@ -274,7 +274,12 @@ int main(int argc, char **argv)
             peak = fabsf(out_l[i]) > peak ? fabsf(out_l[i]) : peak;
     }
     printf("selftest: key held, part 1 voices %u, peak %.3f, lit keys %08x\n", web_voices(0), peak, web_lit_keys());
+    web_midi(0x91, 60, 100); web_midi(0x91, 64, 100); web_midi(0x91, 67, 100); web_midi(0x91, 71, 100);
+    web_midi(0x92, 72, 110);
+    run_ms(150);
+    save_ppm("build/emu/screen_play.ppm");          /* HOME while the band plays: meters, voices */
     web_keys(0);
+    web_midi(0x81, 60, 0); web_midi(0x81, 64, 0); web_midi(0x81, 67, 0); web_midi(0x81, 71, 0); web_midi(0x82, 72, 0);
     run_ms(300);
     tap_button(B_EDIT);
     run_ms(300);
