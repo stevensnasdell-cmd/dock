@@ -56,6 +56,9 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 - HOME's header no longer gives way to an "ENGINE ..." message when a sound changes engine: the browse strip says it.
 
+- HOME's browse strip counts within each engine ("JUNO 2 / 10", then the next engine from 1), not through the
+  whole list.
+
 ### Band
 - **Sounds by part:** Bass, Keys and Lead browse one and the same list (every engine but the drums, 333 sounds), in
   the same order; the drummer (part 4) browses drum kits only. KNOB 4's engine jump keeps to the same rule. Checked in

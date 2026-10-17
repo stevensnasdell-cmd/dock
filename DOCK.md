@@ -39,7 +39,7 @@ This file is the brief. Build from it; update it when a decision changes.
 - If a member exceeds its own share it steals from itself (oldest released note first).
 - Under CPU overload, protect Bass and Lead first (SLOOP's rule).
 - Channels configurable per member (1–16 or OFF). Channel 10 ignored by default (Circuit drums).
-- Program Change on a member's channel loads its sound; Program Change on a global channel loads a Line-up (not built yet: Line-ups come with step 8). A member's Program Change picks entry **bank × 128 + program** of that member's list (Bank Select MSB, CC 0, defaults to 0): the same numbering as the browser's ALL list, so "7 / 333" on screen is program 6.
+- Program Change on a member's channel loads its sound; Program Change on a global channel loads a Line-up (not built yet: Line-ups come with step 8). A member's Program Change picks entry **bank × 128 + program** of that member's list (Bank Select MSB, CC 0, defaults to 0): the browser's ALL list in order (all engines, one after another). HOME's strip counts within each engine instead ("JUNO 2 / 10"), so its number is not the program number; revisit with Line-ups.
 - Sounds: Bass, Keys and Lead browse the same list (every engine but the drums), in the same order; the drummer (part 4) browses drum kits only.
 - Thickness without voices: detuned dual oscillators, sub-osc, drive, chorus/ensemble, widener. Unison is optional and visibly costs voices.
 

@@ -242,7 +242,7 @@ static int dk_browsing(void)
 static void dk_browse_strip(void)
 {
     char where[16], line[40];
-    uint32_t kk, src, total, cur = preset_pos(&total), e, cat, sig;
+    uint32_t kk, src, total, cur, e, cat, sig, as, ak;
     uint16_t mc = T_TRK(song.sel);
     int32_t x;
     if (browse_pending())
@@ -251,6 +251,9 @@ static void dk_browse_strip(void)
         stage_entry(song.sel, &src, &kk);
     e = eng_idx(src_engine(src, kk));
     cat = entry_cat(src, kk) % CAT_N;
+    list_only_eng = src_engine(src, kk);                /* the place within its engine's sounds in the list shown */
+    cur = list_scan(list_mode(), src, kk, 0xFFFFFFFFu, &as, &ak, &total);
+    list_only_eng = 0xFFFFFFFFu;
     fmt_int(where, (int32_t)cur + 1);
     str_cpy(where + str_len(where), " / ", 4);
     fmt_int(where + str_len(where), (int32_t)total);

@@ -241,6 +241,7 @@ static int list_keep(uint32_t m, uint32_t src, uint32_t k)
  * *as, *ak (USER_GENERAL, UP_SLOTS past the end). The segments: 2 per engine in ENGINE_ORDER (factory, native), then
  * the user presets */
 #define LSEG_USER (2u * NENG_SHOWN)
+static uint32_t list_only_eng = 0xFFFFFFFFu;            /* Dock: a scan of one engine's entries only (ui_dock.c's count) */
 static uint32_t lseg_src(uint32_t seg){return seg&1u?USER_GENERAL:eng_vis(seg/2u);}
 static uint32_t lseg_len(uint32_t seg){return seg&1u?UP_SLOTS:ENGINES[eng_vis(seg/2u)]->npresets;}
 static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint32_t *as, uint32_t *ak,
@@ -253,7 +254,8 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
         for (i = 0; i < recent_n; i++) {
             src = recent[i] >> 16;
             k = recent[i] & 0xFFFFu;
-            if (!entry_ok(src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)))
+            if (!entry_ok(src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)) ||
+                (list_only_eng < NENGINES && src_engine(src, k) != list_only_eng))
                 continue;
             if (src == ws && k == wk)
                 pos = c;
@@ -270,7 +272,8 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
                 k = (i + init) % len;
                 if (slot && (!up_used(k) || up_engine(k)!=eng_vis(seg/2u)))
                     continue;
-                if (!list_keep(m, src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)))
+                if (!list_keep(m, src, k) || !DOCK_ENGINE_OK(song.sel % NTRK, src_engine(src, k)) ||
+                    (list_only_eng < NENGINES && src_engine(src, k) != list_only_eng))
                     continue;                           /* (Dock: the drummer's drums, the band's the rest) */
                 if (src == ws && k == wk)
                     pos = c;
