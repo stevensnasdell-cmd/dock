@@ -4,25 +4,35 @@
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
 
-A MIDI synth backing band from the 70s and 80s, in your pocket: custom firmware for the M-VAVE FM-1.
-Three band members (**Bass**, **Keys**, **Lead**) plus a vintage rhythm-box drummer, played from an external
-sequencer such as the Novation Circuit Tracks (one MIDI channel per member), from the FM-1's own keys, or by a
-looper. Not a groovebox: the sequencing happens elsewhere.
+![Dock's screens on the FM-1: HOME, a member, FX, the looper (references at 240 x 240)](docs/design/dock/ref/sheet.png)
 
-> **Status: early development, browser only.** Dock does not install on an FM-1 yet. Everything is built and
-> tested in a browser emulator that runs the real firmware code first. The plan and every design decision are in
-> [DOCK.md](DOCK.md).
+A MIDI backing band from the 70s and 80s, in your pocket: custom firmware for the M-VAVE FM-1. Four members, **Bass,
+Keys, Lead and a drummer**, each on its own MIDI channel, played by an external sequencer such as the Novation Circuit
+Tracks. Dock is not a groovebox: it has no sequencer of its own. It does two jobs: **dialling in the right sound** for
+each member, and **shaping the band live** while the sequencer plays.
 
-## The band
+> **Status: Phase 1, browser only.** Dock does not install on an FM-1 yet. Everything is built and tested in a browser
+> emulator that runs the real firmware code. Whether it fits the FM-1's flash and CPU is measured in Phase 2. The plan
+> and every decision are in [DOCK.md](DOCK.md); changes in [CHANGELOG.md](CHANGELOG.md).
 
-| Member | MIDI ch | Plays |
-|---|---|---|
-| **B: Bass** | 1 (Circuit Synth 1) | mono, legato |
-| **K: Keys** | 2 (Circuit Synth 2) | poly |
-| **L: Lead** | 3 (Circuit MIDI 1) | mono, legato |
-| **Drums** | 4 (Circuit MIDI 2) | its own voice lane, never takes a band voice |
+## What it does
 
-Five line-ups ("Docks"), each with its own three sounds and room: **Yacht**, **Hot**, **Kraut**, **Goth**, **Mod**.
+- **A band, not tracks.** Bass (ch 1), Keys (ch 2), Lead (ch 3), Drums (ch 4). Each member owns its voices (Bass 1,
+  Keys 6, Lead 1); nothing steals from anyone, and the drummer plays in its own lane. Bass and Lead strike every note,
+  with last-note priority and glide only on ties, the way a player does.
+- **Five Line-ups**, one turn of SELECT apart: **Yacht**, **French**, **Hot**, **Mod**, **Goth**. Each brings its four
+  sounds and its own room (reverb, echo, spring, phaser), balanced and in tune out of the box.
+- **Save your version** of any Line-up (hold SAVE), go back to factory, and export it as a `.dock` file that can become
+  the factory one.
+- **Four knobs that always mean the same thing:** Tone, Bite, Shape and Space, on every sound. Tap HOME to shape one
+  member (PART) or the whole band at once (BAND).
+- **ENV and LFO work on every engine**: a common first page nudges each engine's own envelopes and LFOs; the engines'
+  deeper pages are all still there.
+- **Sounds:** PROPHET, a Juno-60-style **JUNO** with chorus I / II, a physically modelled **Rhodes and Wurly** (EP), a
+  Hammond-style **organ** with rotary, **plucks** (upright bass, surf twang), plus FM6, CZ-1, SID and drum kits. Bass,
+  Keys and Lead browse one shared list; the drummer only drum kits. The browse strip names the engine as you turn.
+- **Mixer and mutes:** tap GLO for each member's level and pan; hold GLO to mute or solo members on the black keys and
+  tap the tempo.
 
 ## Try it (emulator)
 
@@ -31,8 +41,23 @@ emu/build.sh web
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Open <http://localhost:8000/build/emu/panel/> in Chrome, press **Switch on**, plug in your Circuit. Details and
-one-time setup: [emu/README.md](emu/README.md).
+Open <http://localhost:8000/build/emu/panel/> in Chrome, press **Switch on**, plug in your Circuit. Saves stay in the
+browser between reloads. Details and one-time setup: [emu/README.md](emu/README.md). Tests: `tests/dock_tests.sh`.
+
+## What's changed from Melodee
+
+Dock started as a fork of Melodee 1.4.1 on 17 Oct 2026. In order:
+
+1. **The browser emulator**: the real firmware in WebAssembly on Felucca's on-screen FM-1 (identical to a native build).
+2. **The band**: voices by member, the drummer's own lane, mono strike-every-note Bass and Lead, the sequencer hidden.
+3. **Dock's look**: a style guide, Space Grotesk / Unbounded / Space Mono, the DOCK palette, a new HOME.
+4. **New and returned engines**: JUNO, the EP (from FRodhes), the organ and plucks brought back.
+5. **Line-ups with rooms**, loudness trims, balance and tuning tests, then **saving and export**.
+6. **The panel simplified** (scales, projects, song mode, the sound designer and more removed; tempo on SEQ; a Band
+   section in HOME's menu), **common ENV / LFO**, and **the macros** with PART / BAND.
+
+Still to come: the drummer's grooves, the FX performance layer, the looper, A/B compare, a device CPU estimate, then
+the hardware build (Phase 2).
 
 ## Layout
 
