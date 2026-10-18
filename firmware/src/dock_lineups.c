@@ -36,7 +36,11 @@ typedef struct {
     int8_t macro[NPART][4];                             /* (to come) each part's Tone, Bite, Shape, Space offset: 0 */
     uint8_t groove[4];                                  /* (to come) the drummer's groove: 0 */
     dock_part_t part[NPART];                            /* Bass, Keys, Lead, Drums */
+    int8_t front[NPART][8];                             /* each part's common ENV / LFO offsets (dock_front.c: ATK DEC
+                                                         * SUS REL RATE DEPTH; 2 spare): 0 the sound as made. Last, so
+                                                         * a record of before them is this one's start (dock_store.c) */
 } dock_lineup_t;
+#define DOCK_LINEUP_V1 (sizeof(dock_lineup_t) - sizeof(((dock_lineup_t *)0)->front))   /* (a record without them) */
 
 #include "dock_factory.h"                               /* DOCK_LINEUPS: generated from firmware/lineups/ */
 #define DOCK_NLINEUPS (sizeof DOCK_LINEUPS / sizeof DOCK_LINEUPS[0])
@@ -95,6 +99,8 @@ static void dock_lineup_capture(dock_lineup_t *r, uint32_t i)
             memcpy(d->patch + FM6_PACKED, fm6_fn[k], FM6_NFN);
         } else if (t->eng_req == ENGI_DRUM)
             memcpy(d->patch, &drum_patch[k], sizeof(drum_patch_t));
+        for (j = 0; j < FR_N; j++)
+            r->front[k][j] = (int8_t)dock_front[k][j];
     }
 }
 
@@ -139,6 +145,8 @@ static void dock_lineup_apply(const dock_lineup_t *r)
                                                          * LEAD's AMT4 64) and must sound as it did */
             t->p[i] = param_reserved(i) ? 0 : d->p[i];
         memset(&drum_patch[k], 0, sizeof(drum_patch_t));   /* (as a preset load: a kit's own edits only) */
+        for (i = 0; i < FR_N; i++)                      /* the common ENV / LFO offsets (a factory one's: 0) */
+            dock_front[k][i] = (int16_t)clamp(r->front[k][i], FR_MIN, FR_MAX);
         if (e == ENGI_PROPHET) {
             memcpy(&p5_patch[k], d->patch, sizeof(p5_patch_t));
             if (!p5_patch_valid(&p5_patch[k]))

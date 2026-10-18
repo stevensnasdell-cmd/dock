@@ -91,9 +91,14 @@ def load(path, rename=None):
         hexs = "".join(hexs) if isinstance(hexs, list) else str(hexs)
         if not re.fullmatch(r"([0-9a-fA-F]{2})*", hexs) or len(hexs) // 2 > PATCH_MAX:
             raise Bad(f"{what}: the patch must be hex, {PATCH_MAX} bytes at most")
+        env, lfo = p.get("env", [0] * 4), p.get("lfo", [0] * 2)   # the common ENV / LFO offsets (0: as made)
+        if not isinstance(env, list) or len(env) != 4 or not isinstance(lfo, list) or len(lfo) != 2:
+            raise Bad(f"{what}: env must be four numbers (ATK DEC SUS REL), lfo two (RATE DEPTH)")
         r["parts"].append({"member": MEMBERS[k], "engine": _int(p.get("engine"), 0, 255, f"{what} engine"),
                            "engine_name": str(p.get("engine_name", "")), "preset": _int(p.get("preset"), 0, 255, f"{what} preset"),
                            "sound": str(p.get("sound", "")),
+                           "env": [_int(x, -64, 63, f"{what} env") for x in env],
+                           "lfo": [_int(x, -64, 63, f"{what} lfo") for x in lfo],
                            "params": [_int(x, -32768, 32767, f"{what} param {i}") for i, x in enumerate(params)],
                            "patch": bytes.fromhex(hexs)})
     if r["parts"][3]["engine"] != 10 or any(p["engine"] == 10 for p in r["parts"][:3]):
@@ -121,6 +126,7 @@ def dump(r):
     for k, p in enumerate(r["parts"]):
         o.append(f'    {{"member": {_s(p["member"])}, "engine": {p["engine"]}, "engine_name": {_s(p["engine_name"])}, '
                  f'"preset": {p["preset"]}, "sound": {_s(p["sound"])},')
+        o.append(f'     "env": [{", ".join(map(str, p["env"]))}], "lfo": [{", ".join(map(str, p["lfo"]))}],')
         rows = [", ".join(map(str, p["params"][i:i + 16])) for i in range(0, len(p["params"]), 16)]
         o.append('     "params": [' + ",\n                ".join(rows) + "],")
         h = p["patch"].hex()
@@ -165,7 +171,8 @@ def header(recs, sources, array="DOCK_LINEUPS"):
             b = p["patch"]
             rows = [", ".join("0x%02x" % x for x in b[i:i + 16]) for i in range(0, len(b), 16)]
             o.append("       {" + (",\n        ".join(rows) if b else "0") + "}}" + ("," if k + 1 < 4 else ""))
-        o.append("     }},")
+        o.append("     },")
+        o.append("     {%s}}," % ", ".join("{" + ", ".join(map(str, p["env"] + p["lfo"] + [0, 0])) + "}" for p in r["parts"]))
     o.append("};")
     return "\n".join(o) + "\n"
 

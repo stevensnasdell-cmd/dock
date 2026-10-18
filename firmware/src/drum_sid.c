@@ -234,7 +234,7 @@ static void dsk_hit(track_t *t, uint32_t note, uint32_t vel)
     dsk_ch_t *c = &K->ch[best];
     dsk_next_t *h = &c->next;
     const dsk_drum_t *d = &DSK_DRUMS[sound];
-    int32_t dec = (t->p[P_E3] - 64) / 2 + pc[1] / 2, snap = clamp(t->p[P_E4] + pc[2], 0, 191);
+    int32_t dec = (drum_decy(t, t->p[P_E3]) - 64) / 2 + pc[1] / 2, snap = clamp(t->p[P_E4] + pc[2], 0, 191);
     h->sound = (uint8_t)sound;
     h->tune = tune ? (int32_t)dr_pow2(tune) : 65536;   /* (untuned: the program's registers exactly) */
     h->gain = dr8_level(vel, t->p[P_E5]);

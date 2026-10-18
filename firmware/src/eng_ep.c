@@ -199,8 +199,10 @@ static void rh_init(const track_t *t, ep_voice_t *v, uint32_t note, uint32_t vel
     int32_t bark_s = ep_knob(t->p[P_E1], 64.0f), bark_g = (int32_t)(4294967296.0f / (float)bark_s + 0.5f);
     int32_t bell = ep_knob(t->p[P_E2], 32.0f), u;
     v->k = k;
-    v->k_dec = (int32_t)RH_DECAY_K[clamp(t->p[P_E4], 0, 127)];   /* k = 1/S, S = 2^((v-64)/32): higher = longer */
-    v->k_rel = (int32_t)RH_DECAY_K[clamp(t->p[P_E5], 0, 127)];
+    v->k_dec = (int32_t)RH_DECAY_K[fr_step(clamp(t->p[P_E4], 0, 127), fr_off(t, FR_DEC), FR_SPO_EP, 0, 127)];
+    v->k_rel = (int32_t)RH_DECAY_K[fr_step(clamp(t->p[P_E5], 0, 127), fr_off(t, FR_REL), FR_SPO_EP, 0, 127)];
+                                                       /* k = 1/S, S = 2^((v-64)/32): higher = longer (Dock's common
+                                                        * DEC / REL nudge them, dock_front.c) */
     v->t30 = 0;
     for (m = 0; m < RH_NM; m++) {
         rh_ms_t *s = &v->m[m];
@@ -427,7 +429,11 @@ static void ep_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vm
 
 /* ---------------------------------------------------------------------------------- the part --- */
 /* the TREM: a Suitcase's stereo vibrato (pans with the LFO) on every TYPE but WURLY, whose tremolo is mono */
-static int ep_stereo(const track_t *t) { return t->p[P_E7] > 0 && ep_type(t) != EPT_WURLY; }
+static int32_t ep_trem(const track_t *t)               /* TREM, through Dock's common DEPTH (dock_front.c) */
+{
+    return fr_lvl(clamp(t->p[P_E7], 0, 127), fr_off(t, FR_DEPTH), 0, 127);
+}
+static int ep_stereo(const track_t *t) { return ep_trem(t) > 0 && ep_type(t) != EPT_WURLY; }
 
 static int32_t *spread_buf;                            /* voice.c: the left channel's buffer while the part is stereo */
 static void ep_post(track_t *t, int32_t *out, uint32_t n, uint32_t nr)
@@ -435,7 +441,7 @@ static void ep_post(track_t *t, int32_t *out, uint32_t n, uint32_t nr)
     ep_part_t *P = ep_part((uint32_t)(t - trk) % NPART);
     uint32_t ty = ep_type(t), nb = RH_TYPE[ty].nbody, j, sb;
     const int32_t *c = RH_RLC[ty];
-    int32_t d = clamp(t->p[P_E7], 0, 127) * 258, l0, l1, wurly = ty == EPT_WURLY, stereo = ep_stereo(t);
+    int32_t d = ep_trem(t) * 258, l0, l1, wurly = ty == EPT_WURLY, stereo = ep_stereo(t);
     if (!P) return;
     if (!nr) {                                         /* silence: the filters at rest */
         if (!P->clean) {

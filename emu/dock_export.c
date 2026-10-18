@@ -6,7 +6,8 @@
  * (firmware/lineups/<name>.dock -> firmware/src/dock_factory.h). Format 1:
  *   dock_lineup 1, name, p_count (P_COUNT: the params' count), voices [Bass, Keys, Lead, drummer's lane],
  *   room {mode 0 CHAIN / 1 SPLIT, return, fx: three {type, mix, rate, char, tone}}, macros [4][4], groove [4],
- *   parts: four {engine, preset, params [p_count], patch: the engine's own patch, hex in lines of 32 bytes ([] none)}
+ *   parts: four {engine, preset, env [ATK DEC SUS REL], lfo [RATE DEPTH] (the common ENV / LFO offsets, 0 the sound as
+ *   made; optional), params [p_count], patch: the engine's own patch, hex in lines of 32 bytes ([] none)}
  * Included by emu/dock_web.c (host and wasm only: not in the device's image). */
 #include <stdarg.h>
 #include <stdio.h>
@@ -71,7 +72,9 @@ static uint32_t dock_lineup_json(const dock_lineup_t *r, char *const sound[NPART
         dx_str(e < NENGINES ? ENGINES[e]->name : "?", 16);
         dx_put(", \"preset\": %u, \"sound\": ", d->preset);
         dx_str(sound && sound[k] ? sound[k] : "", 24);
-        dx_put(",\n     \"params\": [");
+        dx_put(",\n     \"env\": [%d, %d, %d, %d], \"lfo\": [%d, %d],", r->front[k][0], r->front[k][1], r->front[k][2],
+               r->front[k][3], r->front[k][4], r->front[k][5]);
+        dx_put("\n     \"params\": [");
         for (i = 0; i < P_COUNT; i++)
             dx_put("%s%d", !i ? "" : i % 16u ? ", " : ",\n                ", d->p[i]);
         dx_put("],\n     \"patch\": [");

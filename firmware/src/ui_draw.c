@@ -844,6 +844,12 @@ static void draw_columns(void)
             continue;
         }
 #endif
+#if DOCK_BAND
+        if (cur_page()->scope == SC_FRONT && !dock_front_live(TSEL, cur_page()->id[c])) {   /* Dock's common ENV /
+            draw_column(c, d->label, "--", "", T_DIM, -1, ICON_AUTO);                    /* LFO: nothing to move */
+            continue;                                                                     /* on this engine */
+        }
+#endif
         if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
             fmt_int(val, (int32_t)(song.cpu_q8 * 100u / 256u));
             unit = "%";

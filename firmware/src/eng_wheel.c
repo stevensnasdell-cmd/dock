@@ -150,6 +150,8 @@ static void wheel_block(track_t *t)
     T->pk = perc ? (int32_t)(3u + ((perc - 1u) & 1u)) : DRW_NP;   /* 2ND: 4', 3RD: 2 2/3' */
     T->plev = perc == 3u || perc == 4u ? 12000 : 24000;
     T->pdec = perc >= 5u ? 65457u : 65219u;             /* tau 0.6 s / 0.15 s */
+    if (fr_off(t, FR_DEC))                              /* Dock's common DEC (dock_front.c): tau x 2^(off / 16) */
+        T->pdec = 65536u - fr_mulq(65536u - T->pdec, -fr_off(t, FR_DEC));
     T->clk = p[P_E5] * 180;
     if (p[P_E6]) {                                      /* y = 6 / (2 + g) tanh(g x / 2) */
         T->dg = 256 + p[P_E6] * 6;                      /* 1 .. 4 */

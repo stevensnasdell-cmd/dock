@@ -61,12 +61,23 @@ static void cz_native_note_on(track_t *t,voice_t *v)
 }
 static float cz_native_env_tick(cz_native_env_t *e,const cz_native_def_t *d,uint32_t gate)
 { return cz_native_env_scaled(e,d,gate,1.0f); }
+/* Dock's common ENV (dock_front.c) on a DCW or DCA envelope's definition: step 1 the attack, the steps to the
+ * sustain point the decay, its level the sustain, the steps after it the release (a rate: a longer time, slower) */
+static void cz_native_front(cz_native_def_t *d,const int16_t *fr,float top)
+{
+    for(uint32_t k=0;k<8u;k++){
+        int32_t o=!k?fr[FR_ATK]:d->sustain==255u || k<=d->sustain?fr[FR_DEC]:fr[FR_REL];
+        d->rate[k]*=fr_mul(-o);
+    }
+    if(d->sustain<d->end)d->level[d->sustain]=fr_lvlf(d->level[d->sustain],fr[FR_SUS],top);
+}
 static void cz_native_block(track_t *t)
 {
     cz_part_t *c=cz_part((uint32_t)(t-trk)%NTRK);
     const uint8_t *b=cz_patch[(uint32_t)(t-trk)%NTRK].raw;
-    if(c->native_valid && !memcmp(c->native_raw,b,128u))return;
-    memcpy(c->native_raw,b,128u);c->native_valid=1;
+    int16_t fr[FR_N];for(uint32_t k=0;k<FR_N;k++)fr[k]=(int16_t)fr_off(t,k);
+    if(c->native_valid && !memcmp(c->native_raw,b,128u) && !memcmp(c->native_fr,fr,sizeof fr))return;
+    memcpy(c->native_raw,b,128u);memcpy(c->native_fr,fr,sizeof fr);c->native_valid=1;
     for(uint32_t l=0;l<2u;l++)for(uint32_t e=0;e<3u;e++){
         cz_native_def_t *d=&c->native_def[l][e];uint32_t base=CZ_ENV_BASE[l][e];
         d->end=b[CZ_ENV_END[l][e]]&7u;d->sustain=255;
@@ -75,6 +86,7 @@ static void cz_native_block(track_t *t)
             d->rate[k]=cz_hw_rate(b[base+2u*k],e);d->level[k]=cz_hw_target(lev,e);
             if((lev&128u) && d->sustain==255u && k<d->end)d->sustain=(uint8_t)k;
         }
+        if(e && fr_any(t,FR_ATK,FR_REL))cz_native_front(d,fr,e==1u?cz_hw_target(127u,1u):cz_hw_target(127u,2u));
     }
 }
 static __attribute__((noinline)) float cz_native_amp(float level,uint32_t atten,uint32_t sense,uint32_t vel)
@@ -124,9 +136,12 @@ static __attribute__((noinline)) float cz_native_wave(const cz_hw_pd_t *b,uint32
     float carrier=1.0f-(FM6_SIN[i]+(FM6_SIN[i+1u]-FM6_SIN[i])*f);
     return carrier*(1.0f-window*(1.0f/2048.0f))-1.0f;
 }
-static __attribute__((noinline)) float cz_native_vibrato(cz_voice_t *c, const uint8_t *b)
+static __attribute__((noinline)) float cz_native_vibrato(const track_t *t, cz_voice_t *c, const uint8_t *b)
 {
     uint32_t delay = (uint32_t)b[6] | (uint32_t)b[7] << 8, inc = (uint32_t)b[9] | (uint32_t)b[10] << 8;
+    int32_t rt = fr_off(t, FR_RATE), dp = fr_off(t, FR_DEPTH);   /* (Dock's common LFO: its rate, its depth) */
+    if (rt)
+        inc = fr_mulq(inc, rt);
     /* Approximate control clock; needs verification against a CZ-1. */
     c->vib_ticks++;
     if (c->vib_ticks < (uint32_t)((float)delay*FS/(200.0f*CTL))) return 0;
@@ -137,6 +152,8 @@ static __attribute__((noinline)) float cz_native_vibrato(cz_voice_t *c, const ui
     else if (b[4] & 4u) wave = x-32768;
     else wave = x < 32768 ? -32768 : 32767;
     uint32_t depth = (uint32_t)b[12] | (uint32_t)b[13] << 8;
+    if (dp)                                              /* (DEPTH 99: machine 0x300; none: from there up) */
+        depth = (uint32_t)fr_lvl(depth <= 1u ? 0 : (int32_t)depth, dp, 0, 0x300);
     /* DEPTH 0 is encoded as machine depth 1 (Casio p. 85): keep it neutral. */
     return depth<=1u ? 0.0f : (float)wave*(float)depth*(1.0f/8388608.0f);
 }
@@ -153,7 +170,7 @@ static __attribute__((noinline)) void cz_native_render(track_t *t,voice_t *v,int
     uint32_t inc[2],ph[2]={v->ph[0],v->ph[1]},tg[2]={(uint32_t)v->s[0],(uint32_t)v->s[1]};
     float amp[2][2],step[2];
     uint32_t ls=b[0]&3u,first=ls==1u?1u:0u,last=ls>=2u?1u:first;
-    float vib=cz_native_vibrato(c,b),oct=(b[0]>>2)==1u?12.0f:(b[0]>>2)==2u?-12.0f:0.0f;
+    float vib=cz_native_vibrato(t,c,b),oct=(b[0]>>2)==1u?12.0f:(b[0]>>2)==2u?-12.0f:0.0f;
     for(uint32_t l=0;l<2u;l++){
         uint32_t src=ls==2u?0u:l,off=src*57u;
         uint32_t av=15u-(b[20u+off]>>4),al=b[16u+off]>>4;

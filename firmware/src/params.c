@@ -490,12 +490,14 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
 enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE, FAM_ARP, FAM_SEQ, FAM_TRK,
        FAM_FX, FAM_COUNT };
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS page (ui_input.c tracks_edit) */
-       SC_FM6, SC_FMOP, SC_CZ, SC_CZ1, SC_P5, SC_P5STORE, SC_DRUM, SC_DRUMHIT };                         /* FM6: its patch, functions; operator fm6_opsel;
+       SC_FM6, SC_FMOP, SC_CZ, SC_CZ1, SC_P5, SC_P5STORE, SC_DRUM, SC_DRUMHIT,
+       SC_FRONT };                                      /* SC_FRONT: Dock's common ENV / LFO (dock_front.c, FR_*) */                         /* FM6: its patch, functions; operator fm6_opsel;
                                                                   * CZ1: a native CZ-1 tone (cz_edit.h) */
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_CZTOOLS, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID,
-       GR_FXRACK, GR_CLOCK }; /* NOTES shares GR_ROLL for steps and recorded events; GR_CLOCK: Dock's SEQ */
+       GR_FXRACK, GR_CLOCK, GR_FRONT }; /* NOTES shares GR_ROLL for steps and recorded events; GR_CLOCK: Dock's SEQ;
+                                         * GR_FRONT: Dock's common ENV / LFO */
 
 typedef struct {
     const char *title;
@@ -527,10 +529,22 @@ static const page_t PAGES[] = {
     {"SEND FX 1", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFXMIX, G_MFXRATE, G_MFXCHAR, G_MFXTONE}},
     {"SEND FX 2", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX2MIX, G_MFX2RATE, G_MFX2CHAR, G_MFX2TONE}},
     {"SEND FX 3", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX3MIX, G_MFX3RATE, G_MFX3CHAR, G_MFX3TONE}},
+#if DOCK_BAND                                           /* Dock: the common pages first (the front door, dock_front.c:
+                                                         * offsets on the sound's own), the part's ADSR and LFO after */
+    {"ENV", FAM_ENV, SC_FRONT, GR_FRONT, {FR_ATK, FR_DEC, FR_SUS, FR_REL}},
+    {"ADSR", FAM_ENV, SC_TRACK, GR_ADSR, {P_ATK, P_DEC, P_SUS, P_REL}},
+#else
     {"ENV", FAM_ENV, SC_TRACK, GR_ADSR, {P_ATK, P_DEC, P_SUS, P_REL}},
+#endif
     {"ENV DEST", FAM_ENV, SC_TRACK, GR_NONE, {P_ED_FLT, P_ED_PIT, P_ED_SHP, 0xFF}},   /* the former fourth slot: SEQ > TEMPO's QNT */
+#if DOCK_BAND
+    {"LFO", FAM_LFO, SC_FRONT, GR_FRONT, {FR_RATE, FR_DEPTH, 0xFF, 0xFF}},
+    {"LFO WAVE", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
+    {"LFO SYNC", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},
+#else
     {"LFO", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},
+#endif
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot) */
     {"SCALES", FAM_SCL, SC_TRACK, GR_SCALE_PICKER, {0xFF, P_SCALE, P_ROOT, P_QUANT}},
@@ -736,9 +750,38 @@ static const param_desc_t *fx_rack_desc(const page_t *pg, uint32_t slot, int16_t
     }
     return track_desc(TSEL, id);
 }
+#if DOCK_BAND
+/* Dock's common ENV / LFO (dock_front.c): the part's offset, 0 the sound as made; one that means nothing on the
+ * engine (dock_front_live) a fixed "--" (ui_draw.c greys it, a turn does nothing) */
+static const param_desc_t *front_desc(const page_t *pg, uint32_t slot, int16_t **valp)
+{
+    static const param_desc_t FR_D[FR_N] = {PD("ATK", F_OFS, FR_MIN, FR_MAX, 0), PD("DEC", F_OFS, FR_MIN, FR_MAX, 0),
+        PD("SUS", F_OFS, FR_MIN, FR_MAX, 0), PD("REL", F_OFS, FR_MIN, FR_MAX, 0), PD("RATE", F_OFS, FR_MIN, FR_MAX, 0),
+        PD("DEPTH", F_OFS, FR_MIN, FR_MAX, 0)};
+    static param_desc_t off[4];
+    static int16_t off_cell;
+    uint32_t id = pg->id[slot];
+    *valp = 0;
+    if (id >= FR_N)
+        return 0;
+    if (!dock_front_live(TSEL, id)) {
+        off[slot & 3u] = FR_D[id];
+        off[slot & 3u].min = off[slot & 3u].max = 0;
+        off_cell = 0;
+        *valp = &off_cell;
+        return &off[slot & 3u];
+    }
+    *valp = &dock_front[song.sel % NPART][id];
+    return &FR_D[id];
+}
+#endif
 static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **valp)
 {
     uint32_t id = pg->id[slot];
+#if DOCK_BAND
+    if (pg->scope == SC_FRONT)
+        return front_desc(pg, slot, valp);
+#endif
     if(pg->scope==SC_P5 || pg->scope==SC_P5STORE){
         if(id==255u || (pg->scope==SC_P5 && (id>=88u || !P5_PANEL[id].label))){*valp=0;return 0;}
         p5_cell[slot&3u]=pg->scope==SC_P5STORE?(slot?0:p5_store_slot):p5_patch_of(TSEL)->raw[id]+(id==P5_BEND?1:0);

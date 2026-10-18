@@ -92,10 +92,12 @@ static uint32_t drum_sound_step(const track_t *t,uint32_t sound,int32_t delta)
 }
 static const char *drum_character(uint32_t sound)
 {return sound==D9_SD?"SNAPPY":sound<=D9_HT?"ATTACK":"TONE";}
+/* the kit's DECY, through Dock's common DEC (dock_front.c: a kit's one envelope control) */
+static int32_t drum_decy(const track_t *t, int32_t v) { return fr_step(v, fr_off(t, FR_DEC), FR_SPO_KIT, 0, 127); }
 static void drum808_values(const track_t *t,uint32_t sound,int16_t *p)
 {
     memcpy(p,t->p,sizeof t->p);const int8_t *c=drum_patch[t-trk].c[sound];
-    p[P_E3]=(int16_t)clamp(p[P_E3]+c[1],0,127);
+    p[P_E3]=(int16_t)clamp(drum_decy(t,p[P_E3])+c[1],0,127);
     if(sound==D9_SD)p[P_E4]=(int16_t)clamp(p[P_E4]+c[2],0,127);
 }
 static void drum909_values(track_t *t,drum909_part_t *k,uint32_t ins,int32_t pitch,uint32_t vel)
@@ -109,7 +111,7 @@ static void drum909_values(track_t *t,drum909_part_t *k,uint32_t ins,int32_t pit
         d9_set_panel(d,(int)ins,j,value,1);
     }
     float ratio=fm_exp2f((float)(c[0]+pitch)/12.0f+(float)(t->p[P_E1]-64)*3.0f/192.0f);
-    float decay=fm_exp2f((float)(c[1]+t->p[P_E3]-64)/24.0f);
+    float decay=fm_exp2f((float)(c[1]+drum_decy(t,t->p[P_E3])-64)/24.0f);
     if(ins<=D9_HT){
         static const float dec[5]={1380.0f,320.0f,1700.0f,1050.0f,1100.0f};
         d->bt[ins].decay=dec[ins]*decay;
@@ -374,7 +376,7 @@ static __attribute__((noinline)) int drum_source(track_t *t,voice_t *v,drum_lane
         float f[CTL]={0}; drum909_render_voice(&k->d,v->s[1],k->nz,f,(int)n);
         for(i=0;i<n;i++)y[i]=(int32_t)(fm_clampf(f[i],-2.0f,2.0f)*12000.0f);
     } else {int16_t local[P_COUNT];for(uint32_t k=0;k<8u;k++)local[P_E0+k]=p[P_E0+k];const int8_t *c=drum_patch[t-trk].c[L->sound];
-        local[P_E3]=(int16_t)clamp(local[P_E3]+c[1],0,127);
+        local[P_E3]=(int16_t)clamp(drum_decy(t,local[P_E3])+c[1],0,127);
         if(L->sound==D9_SD)local[P_E4]=(int16_t)clamp(local[P_E4]+c[2],0,127);dr8_run_into(&L->r,local,y,n,scratch);}
     return 1;
 }

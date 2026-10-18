@@ -5,7 +5,8 @@
  * which projects leave alone under DOCK_SAVE (project.c proj_dock_slot). A header, then up to DOCK_STORE_MAX records
  * (dock_lineup_t), each named after its Line-up: a factory Line-up moved or added keeps yours. A record of another
  * P_COUNT or size (another firmware's) is not read: yours of before then do not load (they stay in the flash until a
- * save replaces them; a conversion when that happens). Read and written through the projects' staging RAM (proj_wire,
+ * save replaces them; a conversion when that happens). One conversion so far: records of before the common ENV / LFO
+ * offsets (dock_lineup_t.front, DOCK_LINEUP_V1 bytes) load with them at 0. Read and written through the projects' staging RAM (proj_wire,
  * no RAM of its own), on the main loop only; the host tests without flash (MELODEE_FLASH 0) keep it in RAM.
  * Included by project.c */
 #define DOCK_STORE_MAGIC 0x31554C44u                    /* "DLU1" */
@@ -43,6 +44,18 @@ static dock_store_hdr_t *dock_store_read(void)
         memcpy(proj_wire_u.raw, dock_store_ram, dock_store_ram_n);
     }
 #endif
+    if (n >= (int)sizeof *h && h->magic == DOCK_STORE_MAGIC && h->p_count == P_COUNT && h->rec == DOCK_LINEUP_V1 &&
+        h->n <= DOCK_STORE_MAX && (uint32_t)n == (uint32_t)sizeof *h + h->n * DOCK_LINEUP_V1) {
+        uint32_t j = h->n;                              /* records of before the common ENV / LFO offsets: each one's */
+        while (j--) {                                   /* start, then the offsets at 0 (the last moved first) */
+            uint8_t *from = proj_wire_u.raw + sizeof *h + j * DOCK_LINEUP_V1, *to = (uint8_t *)dock_store_rec(j);
+            for (uint32_t b = DOCK_LINEUP_V1; b--;)
+                to[b] = from[b];
+            memset(to + DOCK_LINEUP_V1, 0, sizeof(dock_lineup_t) - DOCK_LINEUP_V1);
+        }
+        h->rec = sizeof(dock_lineup_t);
+        n = (int)DOCK_STORE_BYTES(h->n);
+    }
     if (n < (int)sizeof *h || h->magic != DOCK_STORE_MAGIC || h->p_count != P_COUNT || h->rec != sizeof(dock_lineup_t) ||
         h->n > DOCK_STORE_MAX || (uint32_t)n != DOCK_STORE_BYTES(h->n)) {
         memset(h, 0, sizeof *h);

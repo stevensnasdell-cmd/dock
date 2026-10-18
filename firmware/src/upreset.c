@@ -589,6 +589,9 @@ static int up_load_to(uint32_t k,uint32_t tr)
             if (!param_kept(i))
                 t->p[i] = param_reserved(i) ? 0 : v[i];
         t->preset = 0;
+#if DOCK_BAND
+        memset(dock_front[tr % NPART], 0, sizeof dock_front[0]);   /* Dock's common ENV / LFO: the sound as kept */
+#endif
         if (up_native_cz(r))up_cz_raw(r,cz_patch[tr].raw);
         if(r->engine==ENGI_DRUM){memset(&drum_patch[tr],0,sizeof(drum_patch_t));if(r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID)up_drum_raw(r,&drum_patch[tr]);}
         if(r->engine==ENGI_PROPHET && r->ver==UP_VER_P5){memcpy(&p5_patch[tr],r->packed,sizeof(p5_patch_t));p5_ready[tr]=1;p5_track_accept(t);}

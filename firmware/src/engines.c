@@ -5,6 +5,7 @@
  * sounds at power-on. */
 #include "dsp.c"
 #include "audio_batch.h"
+#include "dock_front.c"          /* Dock: the common ENV / LFO offsets every engine reads */
 #if MELODEE_PROPHET
 #include "eng_prophet_test.c"
 #endif

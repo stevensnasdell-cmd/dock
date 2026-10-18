@@ -162,7 +162,7 @@ static void phys_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     uint32_t md = (uint32_t)p[P_E0] % PM_COUNT, i, f0 = m->inc;
     int32_t y[CTL], ax[CTL];
     int32_t strc = p[P_E1] * 516, brit = clamp(p[P_E2] * 516 + m->cutoff * 2, 0, 65536);   /* Q16 0..1 */
-    int32_t damp = p[P_E3] * 516, pos = p[P_E4], exc = p[P_E7] * 258;   /* exc Q15 */
+    int32_t damp = fr_step(p[P_E3], fr_off(t, FR_DEC), FR_SPO_PLUCK, 0, 127) * 516, pos = p[P_E4], exc = p[P_E7] * 258;   /* exc Q15 */
     int32_t bow = p[P_E6] * 206;                         /* BOW: Dust at up to 0.4 (DaisySP's sustain: 1) */
     int32_t acc = clamp(p[P_E5] * v->vel * 4, 0, 65536);   /* ACC at full velocity, Q16 */
     int32_t g = PHYS_GAIN[md];

@@ -36,7 +36,7 @@ typedef struct {
     uint32_t ia,ib;
     const float *wheel,*wheel_pitch;
 } p5_render_params_t;
-typedef struct { p5_voice_t voice[P5_POLY]; uint32_t lfo; int32_t lfo_value, last_pitch, mod_noise, dc_x1, dc_y1; float wheel[CTL * P5_OVERSAMPLE], wheel_pitch[CTL * P5_OVERSAMPLE]; uint8_t value[56],input_key[56],base_valid; int16_t base_e[8]; int32_t coarse_a,coarse_b,fixed_b,fine_b; p5_render_params_t base; } p5_part_t;
+typedef struct { p5_voice_t voice[P5_POLY]; uint32_t lfo; int32_t lfo_value, last_pitch, mod_noise, dc_x1, dc_y1; float wheel[CTL * P5_OVERSAMPLE], wheel_pitch[CTL * P5_OVERSAMPLE]; uint8_t value[56],input_key[56],base_valid; int16_t base_e[8],base_fr[FR_N]; int32_t coarse_a,coarse_b,fixed_b,fine_b; p5_render_params_t base; } p5_part_t;
 static p5_part_t *p5_part(uint32_t part);
 static p5_patch_t p5_patch[NPART] __attribute__((section(".pool")));
 static uint8_t p5_ready[NPART];
@@ -92,7 +92,7 @@ static float p5_env_tick(p5_env_t *e, int gate, const uint8_t *p,
     if (!gate && e->stage != 0u) e->stage = 3;
     float target = (float)value[s] * (1.0f / 127.0f);
     float scale = 1.0f + (float)variation * (1.0f / 32768.0f);
-    uint32_t rel = p[P5_RELEASE_ON] ? value[r] : 16u;
+    uint32_t rel = p[P5_RELEASE_ON] ? value[r] : value[55];   /* (16: p5_cache_update) */
     if (e->stage == 1u) {
         e->value += P5_ENV_ATK[value[a]] * scale;
         if (e->value >= 1.0f) { e->value = 1.0f; e->stage = 2; }
@@ -190,10 +190,23 @@ static __attribute__((section(".dsp_text"))) void p5_mod_samples(p5_part_t *s,co
 }
 static __attribute__((noinline)) void p5_cache_update(track_t *t,p5_part_t *s,const uint8_t *p)
 {
-    if(s->base_valid && !memcmp(s->input_key,p,55u) && !memcmp(s->base_e,t->p+P_E0,sizeof s->base_e))return;
+    int16_t fr[FR_N];for(uint32_t k=0;k<FR_N;k++)fr[k]=(int16_t)fr_off(t,k);
+    if(s->base_valid && !memcmp(s->input_key,p,55u) && !memcmp(s->base_e,t->p+P_E0,sizeof s->base_e) && !memcmp(s->base_fr,fr,sizeof fr))return;
     memcpy(s->input_key,p,55u);
     for(uint32_t k=0;k<55u;k++)s->value[k]=(uint8_t)p5_value(p,k);
-    memcpy(s->base_e,t->p+P_E0,sizeof s->base_e);s->base_valid=1;
+    s->value[55]=16;                                     /* the release with RELEASE off (p5_env_tick) */
+    if(fr_any(t,FR_ATK,FR_DEPTH)){                       /* Dock's common ENV / LFO (dock_front.c): both envelopes */
+        for(uint32_t k=0;k<2u;k++){                      /* (filter, amp) and the LFO, moved in the cache */
+            s->value[P5_ATTACK_FILTER+k]=(uint8_t)fr_step(s->value[P5_ATTACK_FILTER+k],fr[FR_ATK],FR_SPO_P5,0,127);
+            s->value[P5_DECAY_FILTER+k]=(uint8_t)fr_step(s->value[P5_DECAY_FILTER+k],fr[FR_DEC],FR_SPO_P5,0,127);
+            s->value[P5_SUSTAIN_FILTER+k]=(uint8_t)fr_lvl(s->value[P5_SUSTAIN_FILTER+k],fr[FR_SUS],0,127);
+            s->value[P5_RELEASE_FILTER+k]=(uint8_t)fr_step(s->value[P5_RELEASE_FILTER+k],fr[FR_REL],FR_SPO_P5,0,127);
+        }
+        s->value[55]=(uint8_t)fr_step(16,fr[FR_REL],FR_SPO_P5,0,127);
+        s->value[P5_LFO_RATE]=(uint8_t)fr_step(s->value[P5_LFO_RATE],fr[FR_RATE],FR_SPO_LFO,0,127);
+        s->value[P5_LFO_INITIAL]=(uint8_t)fr_lvl(s->value[P5_LFO_INITIAL],fr[FR_DEPTH],0,127);
+    }
+    memcpy(s->base_e,t->p+P_E0,sizeof s->base_e);memcpy(s->base_fr,fr,sizeof fr);s->base_valid=1;
     const uint8_t *q=s->value;int curtis=!!p[P5_FILTER_REV];p5_render_params_t *c=&s->base;
     s->coarse_a=(clamp(q[P5_FREQ_A],0,96)/2-12)*16+t->p[P_E2]*16;
     s->coarse_b=(clamp(q[P5_FREQ_B],0,96)/2-12)*16+t->p[P_E3]*16;
@@ -220,7 +233,7 @@ static void p5_block(track_t *t)
     if(!s)return;p5_update_bend(t);
     /* Raw-to-DSP clamping is part-wide; envelopes and all voices share it. */
     p5_cache_update(t,s,p);
-    uint32_t inc=P5_LFO_INC[p5_value(p,P5_LFO_RATE)]/P5_OVERSAMPLE;
+    uint32_t inc=P5_LFO_INC[s->value[P5_LFO_RATE]]/P5_OVERSAMPLE;   /* (the cache: Dock's RATE there) */
     uint32_t live=0;for(uint32_t i=0;i<NVOICE;i++)live|=t->v[i].active;
     if(!live){
         /* Keep the wheel clock and noise sequence exact while skipping
@@ -230,7 +243,7 @@ static void p5_block(track_t *t)
         s->lfo+=inc*(CTL*P5_OVERSAMPLE);
         s->lfo_value=(int32_t)(p5_lfo_wave(s->lfo,p)*32768.0f);return;
     }
-    float amount=P5_AMOUNT[clamp(p5_value(p,P5_LFO_INITIAL)+t->mw+(p[P5_PRESS_LFO]?t->at:0),0,127)];
+    float amount=P5_AMOUNT[clamp(s->value[P5_LFO_INITIAL]+t->mw+(p[P5_PRESS_LFO]?t->at:0),0,127)];
     void (*volatile run)(p5_part_t *,const uint8_t *,uint32_t,float,float)=p5_mod_samples;
     run(s,p,inc,amount,(float)p5_value(p,P5_WHEEL_MIX)*(1.0f/127.0f));
 }

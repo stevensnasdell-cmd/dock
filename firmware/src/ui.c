@@ -227,6 +227,7 @@ static uint32_t page_titled(const char *t);              /* ui_list.c: the page 
 static int sec_on(void);                                 /* ui_sections.c: an EDIT page in sections */
 static uint32_t sec_of(uint32_t i);
 static uint32_t smap_pages(uint32_t r, uint8_t *pg);
+static uint32_t fam_pages(uint32_t fam, uint8_t *pg);   /* (below: the pages ENV / LFO visit) */
 static void sec_note(void);
 /* ENV / LFO on the engines with envelopes and LFOs of their own (Prophet, FM6, CZ-1: engine_t.ownenv, the track's
  * ADSR and ENV DEST do nothing there): their own pages (FAM_EDIT, by title). ENV: only those; LFO: those first, then
@@ -240,9 +241,11 @@ static const char *const *native_titles(uint32_t fam)
     static const char *const P5_LFO[] = {"P5 LFO", "P5 WHEEL", 0};
     static const char *const FM_LFO[] = {"FM LFO", 0};
     static const char *const CZ_LFO[] = {"CZ VIBRATO", 0};
+    static const char *const EP_ENV[] = {"EDIT 2", 0};   /* (Dock's EP: BODY, its DECAY and RELEASE) */
     uint32_t e = TSEL->eng_req;
     if (fam == FAM_ENV)
-        return e == ENGI_PROPHET ? P5_ENV : e == ENGI_FM6 ? FM_ENV : e == ENGI_CZ ? CZ_ENV : 0;
+        return e == ENGI_PROPHET ? P5_ENV : e == ENGI_FM6 ? FM_ENV : e == ENGI_CZ ? CZ_ENV :
+               DOCK_BAND && e == ENGI_EP ? EP_ENV : 0;
     if (fam == FAM_LFO)
         return e == ENGI_PROPHET ? P5_LFO : e == ENGI_FM6 ? FM_LFO : e == ENGI_CZ ? CZ_LFO : 0;
     return 0;
@@ -273,6 +276,14 @@ static int page_visible(uint32_t i)
     if (PAGES[i].graph == GR_MOTION)                   /* MOTION: once there is motion (Kerem: an empty page; the one
                                                          * shown stays until it is left) */
         return motion_has_lanes(TSEL) || (!ui.home && ui.page == i);
+#if DOCK_BAND
+    if (PAGES[i].scope == SC_FRONT)                    /* Dock's common ENV / LFO: while one of its controls means */
+        return dock_front_live(TSEL, PAGES[i].id[0]) || dock_front_live(TSEL, PAGES[i].id[1]) ||   /* something */
+               (PAGES[i].id[2] < FR_N && dock_front_live(TSEL, PAGES[i].id[2])) ||
+               (PAGES[i].id[3] < FR_N && dock_front_live(TSEL, PAGES[i].id[3]));
+    if (PAGES[i].fam == FAM_ENV && drum_track(TSEL))   /* (a kit: the ADSR and ENV DEST do nothing) */
+        return 0;
+#endif
     if (PAGES[i].fam == FAM_ENV && native_titles(FAM_ENV))   /* (the track's ADSR, ENV DEST: nothing there) */
         return 0;
     if(PAGES[i].scope==SC_DRUM || PAGES[i].scope==SC_DRUMHIT)return drum_track(TSEL);
@@ -529,6 +540,19 @@ static void page_scroll(int32_t dir)
         page_entered();
         return;
     }
+    if (fam == FAM_ENV || fam == FAM_LFO) {             /* Dock's ENV / LFO: the pages their button visits, the */
+        uint8_t pg[NPAGES];                             /* common one first (an engine's own then turn in its section) */
+        uint32_t c;
+        n = fam_pages(fam, pg);
+        for (c = 0; c < n && pg[c] != ui.page; c++)
+            ;
+        if (n < 2u || c >= n)
+            return;
+        ui.page = pg[(c + (dir > 0 ? 1u : n - 1u)) % n];
+        ui.fam_last[fam] = ui.page;
+        page_entered();
+        return;
+    }
 #endif
     for (n = 0; n < NPAGES; n++) {
         i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
@@ -547,11 +571,16 @@ static void page_scroll(int32_t dir)
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
 {
     uint32_t i, n = 0;
+#if DOCK_BAND
+    for (i = 0; i < NPAGES; i++)                        /* Dock: the common page first (the front door) */
+        if (PAGES[i].fam == fam && PAGES[i].scope == SC_FRONT && page_visible(i))
+            pg[n++] = (uint8_t)i;
+#endif
     for (i = 0; i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam))
+        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && !(DOCK_BAND && PAGES[i].scope == SC_FRONT))
             pg[n++] = (uint8_t)i;
     return n;
 }
@@ -562,15 +591,17 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
 
 static void open_family(uint32_t fam)
 {
-    if ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam)) {   /* ENV / LFO of the Prophet, FM6, CZ-1 */
+    if ((fam == FAM_ENV || fam == FAM_LFO) && (DOCK_BAND || native_titles(fam))) {   /* ENV / LFO of the Prophet,
+                                                                                         * FM6, CZ-1; Dock: all */
         uint8_t pg[NPAGES];
         uint32_t n = fam_pages(fam, pg), k;
         for (k = 0; k < n && pg[k] != ui.page; k++) {}
         if (!n)
             return;
         ui.page = !ui.home && k < n ? pg[(k + 1u) % n]                 /* again: the next one; from elsewhere the */
+                  : DOCK_BAND ? pg[0]                                   /* engine's page last used, else its first */
                   : native_page(ui.fam_last[fam], fam) && fam_has(fam, ui.fam_last[fam]) ? ui.fam_last[fam] : pg[0];
-                                                                        /* engine's page last used, else its first */
+                                                                        /* (Dock: the front door, the common page) */
     } else if (DOCK_BAND && fam == FAM_FX && (ui.home || cur_page()->fam != FAM_FX)) {
         ui.page = (uint8_t)page_titled("SHARED");     /* Dock's FX: the Line-up's room first (SHARED, its sends), on */
                                                       /* through the member's own rack and slots, round again */
@@ -656,6 +687,9 @@ typedef struct {
     p5_patch_t p5;
     drum_patch_t drum;
     int16_t p[P_COUNT];
+#if DOCK_BAND
+    int16_t front[FR_N];         /* Dock's common ENV / LFO offsets (dock_front.c) */
+#endif
     step_snapshot_t step[NSTEP];
     motion_store_t motion_backup; /* one track only, swaps with the shared event pool on undo */
     uint32_t pattern_gen;
@@ -695,6 +729,9 @@ static uint32_t track_sig(const track_t *t)      /* the sound (an FM6 track's pa
     h = fnv(h, cz_patch[k].raw, CZ_BYTES);
     h = fnv(h,p5_patch_of(&trk[k]),sizeof(p5_patch_t));
     h = fnv(h,&drum_patch[k],sizeof(drum_patch_t));
+#if DOCK_BAND
+    h = fnv(h, dock_front[k % NPART], sizeof dock_front[0]);
+#endif
     for (uint32_t j = 0; j < motion.count; j++)
         if ((motion.event[j].place >> 6) == k) h = fnv(h, &motion.event[j], sizeof motion.event[j]);
     return h ^ ((motion.on >> k) & 1u);
@@ -780,6 +817,9 @@ static void load_begin(track_t *t, uint32_t what)
     u->cz = cz_patch[i];
     u->p5 = *p5_patch_of(&trk[i]);
     u->drum=drum_patch[i];
+#if DOCK_BAND
+    memcpy(u->front, dock_front[i % NPART], sizeof u->front);
+#endif
     u->pat = pat_sig[i];
     u->patn = pat_last[i];
     motion_snapshot_track(t, &u->motion_backup);
@@ -867,6 +907,13 @@ static void undo_step(int redo)
                 t->p[i] = u->p[i];
                 u->p[i] = v;
             }
+#if DOCK_BAND
+        for (i = 0; i < FR_N; i++) {                /* (Dock's common ENV / LFO with the sound) */
+            int16_t v = dock_front[trk_index(t) % NPART][i];
+            dock_front[trk_index(t) % NPART][i] = u->front[i];
+            u->front[i] = v;
+        }
+#endif
     }
     if (u->what & UNDO_PAT) {
         uint32_t ps = pat_sig[trk_index(t)];
@@ -964,6 +1011,9 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     pi %= e->npresets;
     t->preset = (uint8_t)pi;
     memset(&drum_patch[t-trk],0,sizeof(drum_patch_t));
+#if DOCK_BAND
+    memset(dock_front[trk_index(t) % NPART], 0, sizeof dock_front[0]);   /* Dock's common ENV / LFO: the sound as made */
+#endif
     for (i = 0; i < P_E0; i++)                        /* the rest of the sound to its defaults: a preset */
         if (!param_kept(i))                           /* sounds the same after any edit */
             t->p[i] = TP[i].def;

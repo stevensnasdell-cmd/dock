@@ -35,6 +35,7 @@ typedef struct {
     cz_voice_t v[NPOLY];
     cz_native_def_t native_def[2][3];
     uint8_t native_raw[128], native_valid;
+    int16_t native_fr[FR_N];                     /* Dock's common ENV offsets the definitions were made with */
 } cz_part_t;
 static cz_part_t *cz_part(uint32_t part);              /* engines.c: shared runtime pool */
 static cz_voice_t *cz_voice(track_t *t, voice_t *v)

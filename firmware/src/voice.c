@@ -71,7 +71,7 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
 static void track_lfo_tick(track_t *t)
 {
     uint32_t old = t->lfo_ph;
-    t->lfo_ph += t->p[P_LSYNC] ? lfo_sync_inc(t) : LFO_INC[t->p[P_LRATE] & 127];
+    t->lfo_ph += t->p[P_LSYNC] ? lfo_sync_inc(t) : LFO_INC[fr_lrate(t)];   /* (Dock's common RATE) */
     if (t->lfo_ph < old) {
         t->lfo_prev = (int16_t)mod_sh(t);               /* mod.c SLEW: it glides on from there */
         t->lfo_rnd = lfo_rand(t);
@@ -705,7 +705,8 @@ static void engine_block(track_t *t)
 /* one control tick (CTL samples) of the amplitude envelope; returns Q15 */
 static int32_t env_tick(track_t *t, voice_t *v)
 {
-    const int16_t *p = t->p;
+    int16_t q[P_REL + 1u];
+    const int16_t *p = fr_adsr(t, q);                   /* (Dock's common ENV: t->p at the middle) */
     int32_t sus = (int32_t)p[P_SUS] << 17;              /* Q24 */
     switch (v->stage) {
     case 1:
@@ -812,6 +813,32 @@ static void engine_render(track_t *t,voice_t *v,const engine_t *e,int32_t *out,u
     e->render(t,v,out,n,m);
 }
 
+/* Dock's common DEPTH on the part's LFO (dock_front.c): its four depths (LFO DEST) moved as levels; a sound with no
+ * LFO anywhere gets vibrato, the main target, unless the engine has an LFO of its own to take it (fr_lfo_own) */
+static int fr_lfo_own(const track_t *t)                 /* DEPTH moves an LFO of the engine's own */
+{
+    const engine_t *e = ENGINES[t->engine];
+    if (e == &ENG_P5_TEST) {                            /* (its LFO routed by the wheel switches) */
+        const uint8_t *q = p5_patch_of(t)->raw;
+        return q[P5_WHEEL_FREQ_A] || q[P5_WHEEL_FREQ_B] || q[P5_WHEEL_PW_A] || q[P5_WHEEL_PW_B] || q[P5_WHEEL_FILTER];
+    }
+    if (e == &ENG_FM6)                                  /* (pitch through PMS, or an operator's AMS) */
+        return fm6_lfo_routed(t);
+    return e == &ENG_CZ || e == &ENG_EP || e == &ENG_DRUM;   /* (the vibrato; TREM; a kit: none, greyed) */
+}
+static void fr_ldepth(const track_t *t, int16_t *ld)
+{
+    int32_t off = fr_off(t, FR_DEPTH);
+    if (!ld[0] && !ld[1] && !ld[2] && !ld[3]) {
+        if (off > 0 && !fr_lfo_own(t))
+            ld[0] = (int16_t)((off + 3) / 4);           /* vibrato: up to +-3 semitones at the top */
+        return;
+    }
+    for (uint32_t k = 0; k < 3u; k++)
+        ld[k] = (int16_t)fr_dep(ld[k], off);
+    ld[3] = (int16_t)fr_lvl(ld[3], off, 0, 127);
+}
+
 /* Keep the per-voice renderer separate from the bus/ISR loops. This bounds
  * the ISR's code footprint and permits an independent target cost check. */
 static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t *out, uint32_t n, int clear_idle)
@@ -823,6 +850,9 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
     int32_t tune, tune_fine;
     int32_t bend, bend16, bend_fine;
     uint32_t ti = (uint32_t)(t - trk);
+    int16_t ld[4] = {p[P_LD_PIT], p[P_LD_FLT], p[P_LD_SHP], p[P_LD_AMP]};   /* LFO DEST (Dock: through DEPTH) */
+    if (fr_off(t, FR_DEPTH))
+        fr_ldepth(t, ld);
     if (ENGINES[eng_idx(t->eng_req)] == &ENG_DRUM) {
         midi_bend_q8[ti] = midi_bend_target[ti] = 0;
     } else {
@@ -885,8 +915,8 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
             if (e == &ENG_SID)                          /* the chip's envelope counter (ENV3): ENV DEST, the matrix */
                 m.envq15 = sid_env_q15(t, v);
             m.amp1 = e->ownenv ? env : mulq15(env, v->vel * 258);
-            if (p[P_LD_AMP])
-                m.amp1 = mulq15(m.amp1, 32767 - mulq15(p[P_LPOL] ? lfo : (lfo + 32768) >> 1, p[P_LD_AMP] * 258));
+            if (ld[3])
+                m.amp1 = mulq15(m.amp1, 32767 - mulq15(p[P_LPOL] ? lfo : (lfo + 32768) >> 1, ld[3] * 258));
             if (fade)                                   /* linear to 0 over the fade */
                 m.amp1 = m.amp1 * (int32_t)(t->xf - 1u) / (int32_t)XF_BLOCKS;
             m.amp0 = v->env_out;
@@ -902,16 +932,16 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
         }
         if (!env && !m.amp0 && v->stage == 2 && !e->sampled)
             continue;                                   /* held at a silent sustain (SUS 0): nothing to render */
-        pitch = v->pitch_cur + tune + bend16 + ((lfo * p[P_LD_PIT] * 3) >> 15) + ((m.envq15 * p[P_ED_PIT] * 3) >> 15);
+        pitch = v->pitch_cur + tune + bend16 + ((lfo * ld[0] * 3) >> 15) + ((m.envq15 * p[P_ED_PIT] * 3) >> 15);
         m.pitch16 = clamp(pitch, 0, 2047);
         m.inc = tuned_pitch_inc(m.pitch16);
         m.fine = v->fine + v->scale_fine + tune_fine + bend_fine;
         if (m.fine)             /* residual below 1/16 semitone */
             m.inc += (uint32_t)((int32_t)(m.inc >> 12) * m.fine);
-        m.cutoff = ((lfo * p[P_LD_FLT]) >> 7) + ((m.envq15 * p[P_ED_FLT]) >> 7);
+        m.cutoff = ((lfo * ld[1]) >> 7) + ((m.envq15 * p[P_ED_FLT]) >> 7);
         if (v->vel > 110)                               /* accent opens the filter with the env */
             m.cutoff += (m.envq15 * 24) >> 7;
-        m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
+        m.shape = (64 << 8) + ((lfo * ld[2]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
         if ((MELODEE_LEGACY_EXTRAS && e == ENGINES[2]) || e == &ENG_CZ)   /* native DCA remains the matrix's ENV source */
             m.envq15 = phase_env_source(t, v);
         if(e==&ENG_P5_TEST)m.envq15=p5_env_source(t,v);

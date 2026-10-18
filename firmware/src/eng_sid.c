@@ -331,7 +331,10 @@ static int sid_done(track_t *t, voice_t *v)
     uint32_t c = s->cycle_frac + SID_CYC_Q16, hr = s->hr;
     s->env_prev = s->env;
     s->cycle_frac = (uint16_t)c;
-    sid_env_clock(s, t->p, c >> 16);
+    {
+        int16_t q[P_REL + 1u];
+        sid_env_clock(s, fr_adsr(t, q), c >> 16);      /* (the ADSR through Dock's common ENV, dock_front.c) */
+    }
     if (hr && !s->hr) {                                /* C64: the hard restart is over: the note's registers go */
         s->latch = 1;                                  /* in with its gate, its frames count from it */
         s->frame = (int32_t)SID_FRAME_Q16;

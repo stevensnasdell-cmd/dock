@@ -52,6 +52,7 @@ static struct {                                  /* the patch through the macros
     uint8_t p[FP_SIZE + 1u];
     uint8_t gen, ok;
     int16_t e[7];                                /* P_E0..P_E6 it was made with */
+    int16_t fr[FR_N];                            /* .. and Dock's common ENV / LFO offsets (dock_front.c) */
     int32_t dt[6];                               /* DTUN: per operator, Q24 log2 */
 } fm6_eff[NTRK];
 
@@ -246,6 +247,55 @@ static void fm6_init(void)
     }
 }
 
+/* -------------------------------------------------- Dock's common ENV / LFO --- */
+/* the offsets (dock_front.c) on the patch after the macros: every operator's EG (R1 the attack, R2 R3 the decay, L3
+ * the sustain, R4 the release: a rate, higher = faster, so a longer time is a lower rate), the LFO's speed (to the
+ * table's nearest of the speed scaled) and its depths: the ones the voice has, else the first it routes (PMD with a
+ * PMS, else AMD with an operator's AMS) */
+static int fm6_ams_any(const uint8_t *p)
+{
+    for (uint32_t k = 0; k < 6u; k++)
+        if (p[k * FP_OP + FP_AMS])
+            return 1;
+    return 0;
+}
+static void fm6_front(const track_t *t, uint8_t *p)
+{
+    int32_t a = fr_off(t, FR_ATK), d = fr_off(t, FR_DEC), su = fr_off(t, FR_SUS), r = fr_off(t, FR_REL);
+    int32_t rt = fr_off(t, FR_RATE), dp = fr_off(t, FR_DEPTH);
+    uint32_t k;
+    for (k = 0; k < 6u; k++) {
+        uint8_t *op = p + k * FP_OP;
+        op[FP_R1] = (uint8_t)fr_step(op[FP_R1], -a, FR_SPO_DX, 0, 99);
+        op[FP_R1 + 1] = (uint8_t)fr_step(op[FP_R1 + 1], -d, FR_SPO_DX, 0, 99);
+        op[FP_R1 + 2] = (uint8_t)fr_step(op[FP_R1 + 2], -d, FR_SPO_DX, 0, 99);
+        op[FP_L1 + 2] = (uint8_t)fr_lvl(op[FP_L1 + 2], su, 0, 99);
+        op[FP_R1 + 3] = (uint8_t)fr_step(op[FP_R1 + 3], -r, FR_SPO_DX, 0, 99);
+    }
+    if (rt) {
+        uint32_t want = fr_mulq(FM6_LFO_INC[p[FP_LFS] % 100u], rt), best = 0, bd = ~0u;
+        for (k = 0; k < 100u; k++) {
+            uint32_t x = FM6_LFO_INC[k], dd = x > want ? x - want : want - x;
+            if (dd < bd) { bd = dd; best = k; }
+        }
+        p[FP_LFS] = (uint8_t)best;
+    }
+    if (p[FP_LPMD] || p[FP_LAMD] || dp < 0) {
+        if (p[FP_LPMD]) p[FP_LPMD] = (uint8_t)fr_lvl(p[FP_LPMD], dp, 0, 99);
+        if (p[FP_LAMD]) p[FP_LAMD] = (uint8_t)fr_lvl(p[FP_LAMD], dp, 0, 99);
+    } else if (p[FP_LPMS]) {
+        p[FP_LPMD] = (uint8_t)fr_lvl(0, dp, 0, 99);
+    } else if (fm6_ams_any(p)) {
+        p[FP_LAMD] = (uint8_t)fr_lvl(0, dp, 0, 99);
+    }
+}
+/* the voice's LFO reaches it (PMS, or an operator's AMS): Dock's DEPTH moves it there (voice.c fr_lfo_own) */
+static int fm6_lfo_routed(const track_t *t)
+{
+    const uint8_t *p = fm6_patch[(uint32_t)(t - trk) % NTRK];
+    return p[FP_LPMS] || fm6_ams_any(p);
+}
+
 /* -------------------------------------------------------------- macros --- */
 /* the patch through E0..E6 (audio ISR; cheap when nothing changed). With every macro at 0 it is the patch.
  * 1 = made again (the patch or a macro changed) */
@@ -259,13 +309,17 @@ static int fm6_eff_build(const track_t *t)
     if (fm6_eff[tr].ok && fm6_eff[tr].gen == fm6_pgen[tr]) {
         for (k = 0; k < 7u && fm6_eff[tr].e[k] == e[k]; k++)
             ;
-        if (k == 7u)
+        for (j = 0; k == 7u && j < FR_N && fm6_eff[tr].fr[j] == fr_off(t, j); j++)
+            ;
+        if (k == 7u && j == FR_N)
             return 0;
     }
     fm6_eff[tr].gen = fm6_pgen[tr];
     memcpy(fm6_eff[tr].p, fm6_patch[tr], FP_SIZE);
     for (k = 0; k < 7u; k++)
         fm6_eff[tr].e[k] = e[k];
+    for (j = 0; j < FR_N; j++)
+        fm6_eff[tr].fr[j] = (int16_t)fr_off(t, j);
     {
         uint8_t *p = fm6_eff[tr].p;
         uint32_t alg = e[0] >= 1 && e[0] <= 32 ? (uint32_t)e[0] - 1u : p[FP_ALG] & 31u;
@@ -289,6 +343,8 @@ static int fm6_eff_build(const track_t *t)
                 op[FP_R1 + j] = (uint8_t)clamp(op[FP_R1 + j] - meg, 0, 99);
             op[FP_KVS] = (uint8_t)clamp(op[FP_KVS] + e[5], 0, 7);
         }
+        if (fr_any(t, FR_ATK, FR_DEPTH))
+            fm6_front(t, p);
     }
     fm6_eff[tr].ok = 1;
     return 1;
