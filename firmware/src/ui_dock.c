@@ -121,7 +121,8 @@ static void dk_head(void)
 
 /* the knob strip: the macros, four cells 57 x 48, the name and a gauge from its middle (the sound as made: a dot
  * there) to the offset; PART: the selected member's, in TEXT; BAND: Bass, Keys and Lead's, a line each in its colour.
- * The knob turning fills its cell: PART with the member's colour, BAND with TEXT (the whole band) */
+ * The knob turning fills its cell: PART with the member's colour; BAND a raised SURF (a fill would hide the band's
+ * coloured lines), the lines a row each, 3 px with 2 px between, each on its own track */
 #define DK_GX 4                                         /* the gauge: x, width, its middle */
 #define DK_GW (CARD_W - 9)
 #define DK_GC (DK_GX + DK_GW / 2)
@@ -138,7 +139,7 @@ static void dk_cells(void)
         const char *lab = cell_label(MC_NAME[c], CARD_W - 8);   /* (its short form if need be: Melodee Pixel) */
         const aafont_t *lf = ty_fit(TY_LB, lab, CARD_W - 8);
         uint32_t hot = c == ui.hot_col && ui.hot_t, sig;
-        uint16_t bg = hot ? band ? T_TEXT : mc : T_SURF, fg = hot ? T_INK : T_TEXT;
+        uint16_t bg = hot ? band ? ux_mix(T_SURF, T_TEXT, 16) : mc : T_SURF, fg = hot && !band ? T_INK : T_TEXT;
         sig = 1u + hot * 2u + band * 4u + song.sel * 13u + ux.gen * 977u + ux.pal * 31u;
         for (k = 0; k < NPART; k++)
             sig = sig * 131u + (uint32_t)(dock_macro[k][c] + 64);
@@ -148,10 +149,12 @@ static void dk_cells(void)
         cv_begin(CARD_W, CARD_H, T_BG);
         cv_rrect(0, 0, CARD_W, CARD_H, 8, bg, T_BG);
         cv_free_text(4, ty_y(19, lf), lf, lab, fg, bg, CARD_W - 8);
-        if (band) {                                     /* Bass, Keys, Lead: a line each, 2 px */
-            cv_rrect(DK_GX, 32, DK_GW, 6, 1, hot ? ux_mix(bg, T_INK, 30) : T_LINE, bg);
-            for (k = 0; k < 3u; k++)
-                dk_gauge_line(dock_macro[k][c], 32 + 2 * (int32_t)k, 2, T_TRK(k));
+        if (band) {                                     /* Bass, Keys, Lead: a row each, 3 px, 2 px apart */
+            for (k = 0; k < 3u; k++) {
+                int32_t y = 29 + 5 * (int32_t)k;
+                cv_rect(DK_GX, y, DK_GW, 3, hot ? ux_mix(bg, T_TEXT, 14) : T_LINE);
+                dk_gauge_line(dock_macro[k][c], y, 3, T_TRK(k));
+            }
         } else {
             cv_rrect(DK_GX, 34, DK_GW, 3, 1, hot ? ux_mix(bg, T_INK, 30) : T_LINE, bg);   /* the gauge's track */
             dk_gauge_line(dock_macro[song.sel % NPART][c], 34, 3, fg);

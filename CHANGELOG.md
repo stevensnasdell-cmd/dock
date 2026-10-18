@@ -215,6 +215,8 @@ All under `DOCK_BAND`: with `-DDOCK_BAND=0` the panel is Melodee's.
   Lead at power-on. Optional WAVs of every sound: `build/host/juno_test build/juno`.
 
 ### Design
+- BAND's knob cells: the turning one is a raised surface, not white (the band's coloured lines showed poorly on it),
+  and Bass, Keys and Lead each get their own row, 3 px with 2 px between, on its own track.
 - HOME's header: the clock and tempo at the left, the Line-up and the wordmark at the right, reading "Yacht DOCK".
 - **Style guide** `docs/design/DOCK_STYLE.md`: colour = band member, shapes not numbers, calm screens, nothing under
   16 px or cut; tokens, type roles, the 240 × 240 grid, components, and what changed from the scamps and why.
