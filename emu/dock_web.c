@@ -346,6 +346,34 @@ int main(int argc, char **argv)
         if (!shown || !gone)
             return 1;
     }
+    {   /* the macros on HOME: KNOB 1 the selected member's Tone (and the sound with it), HOME tapped: BAND, KNOB 4 the
+         * band's Space, HOME twice more: the chord wheel, PART again */
+        float a = 0, b = 0;
+        uint32_t sel = song.sel % NPART, ok;
+        memset(dock_macro, 0, sizeof dock_macro);
+        web_midi(0x90 | sel, 60, 100);
+        run_ms(100);
+        for (k = 0; k < 20u; k++) { web_render(128); for (uint32_t i = 0; i < 128u; i++) a += fabsf(out_l[i] - out_l[i ? i - 1 : 0]); }
+        web_enc(EN_K1, 10);
+        run_ms(100);
+        for (k = 0; k < 20u; k++) { web_render(128); for (uint32_t i = 0; i < 128u; i++) b += fabsf(out_l[i] - out_l[i ? i - 1 : 0]); }
+        web_midi(0x80 | sel, 60, 0);
+        ok = dock_macro[sel][MC_TONE] == 10 * MC_DETENT && dock_macro[(sel + 1u) % 3u][MC_TONE] == 0 && b != a;
+        save_ppm("build/emu/screen_macro.ppm");
+        tap_button(B_HOME);
+        web_enc(EN_K1 + 3u, 5);
+        run_ms(60);
+        ok &= dock_macro_band && dock_macro[DOCK_BASS][MC_SPACE] == 5 * MC_DETENT && dock_macro[DOCK_DRUMS][MC_SPACE] == 5 * MC_DETENT;
+        tap_button(B_HOME);
+        ok &= ui.home_pg == 1u;
+        tap_button(B_HOME);
+        ok &= !ui.home_pg && !dock_macro_band;
+        printf("selftest: KNOB 1 on HOME turns the member's Tone (the sound changes), BAND, the wheel, PART (%s)\n",
+               ok ? "ok" : "FAILED");
+        memset(dock_macro, 0, sizeof dock_macro);
+        if (!ok)
+            return 1;
+    }
     {   /* Program Change: a member's channel picks entry bank * 128 + program of its list; past the end, nothing */
         uint32_t src, kk, total, ok = 1;
         uint8_t sel = song.sel;

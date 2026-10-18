@@ -483,6 +483,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_DOCK_MINE, S_DOCK_MINE_STRIP, S_DOCK_SHEET_FACTORY, S_DOCK_FACTORY,   /* Dock: your Line-up (dock_lineups.c); */
        S_DOCK_CLOCK, S_DOCK_CLOCK_EXT, S_DOCK_BAND_SPLIT, S_DOCK_GLOBAL,       /* the CLOCK page, the menu's Band */
        S_DOCK_ENV, S_DOCK_LFO, S_DOCK_ENV_EP, S_DOCK_ENV_DRUM, S_DOCK_ADSR,    /* the common ENV / LFO (dock_front.c) */
+       S_DOCK_PART, S_DOCK_BAND, S_DOCK_BAND_TURN, S_DOCK_PART_DRUM, S_DOCK_MINE_BAND,   /* the macros (dock_macro.c) */
 #endif
        S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
@@ -513,6 +514,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "dock_mine", "dock_mine_strip", "dock_band_factory", "dock_factory",
     "dock_clock", "dock_clock_ext", "dock_band_split", "dock_global",
     "dock_env", "dock_lfo", "dock_env_ep", "dock_env_drum", "dock_adsr",
+    "dock_part", "dock_band", "dock_band_turn", "dock_part_drum", "dock_mine_band",
 #endif
 };
 
@@ -920,6 +922,10 @@ static void ref_scene(int s)
 static void setup(int s)
 {
     memset(kb_chn, 0, sizeof kb_chn);               /* no key held (roll_playing holds one) */
+#if DOCK_BAND
+    memset(dock_macro, 0, sizeof dock_macro);       /* (Dock's macros: the sound as made, PART) */
+    dock_macro_band = 0;
+#endif
     memset(&stage, 0, sizeof stage);                /* (Stage's knobs in) */
     chain.running = 0;                              /* (the song the SONG scene plays) */
     if (s >= S_MOCK_HOME && s <= S_MOCK_MENU) {
@@ -1146,6 +1152,29 @@ static void setup(int s)
     case S_DOCK_ENV_EP: song.playing = 0; track_select(DOCK_KEYS); go_title("ENV"); break;
     case S_DOCK_ENV_DRUM: song.playing = 0; track_select(DOCK_DRUMS); go_title("ENV"); break;
     case S_DOCK_ADSR: song.playing = 0; track_select(DOCK_KEYS); eng(ENGI_JUNO); go_title("ADSR"); break;
+    /* the macros on HOME: the Keys' (PART: Tone turning), the band's (BAND, then Bite turning), the drummer's Space
+     * turning, BAND beside your Kraut (the header at its fullest) */
+    case S_DOCK_PART: case S_DOCK_BAND: case S_DOCK_BAND_TURN: case S_DOCK_PART_DRUM: case S_DOCK_MINE_BAND:
+        song.playing = 0; go_home();
+        if (s == S_DOCK_MINE_BAND) {
+            dock_lineup_turn(1);
+            dock_mine |= (uint8_t)(1u << dock_lineup);
+            dk.lineup_ms = 0;
+        }
+        dk.browse_ms = 0;
+        track_select(s == S_DOCK_PART_DRUM ? DOCK_DRUMS : DOCK_KEYS);
+        dk.browse_ms = 0;
+        dk.snd = 0;                                 /* (no browse strip: the knobs) */
+        {
+            static const int16_t M[NPART][MC_N] = {{-40, 12, 0, 20}, {24, -8, 40, 63}, {-64, 30, -20, 6}, {0, 0, 0, -30}};
+            memcpy(dock_macro, M, sizeof M);
+        }
+        dock_macro_band = s == S_DOCK_BAND || s == S_DOCK_BAND_TURN || s == S_DOCK_MINE_BAND;
+        if (s != S_DOCK_BAND && s != S_DOCK_MINE_BAND) {
+            ui.hot_col = s == S_DOCK_PART ? 0 : s == S_DOCK_BAND_TURN ? 1 : 3;
+            ui.hot_t = 40;
+        }
+        break;
 #endif
     /* .. MIXER with one, two (track 2 selected, its PAN turned), three (track 3 muted, track 1 armed); PATTERNS and SONG
      * with two; GLO with two (track 2 muted); NEW SONG's roles as they open without a template */

@@ -196,7 +196,8 @@ static void rh_init(const track_t *t, ep_voice_t *v, uint32_t note, uint32_t vel
     const rh_type_t *ty = &RH_TYPE[ep_type(t)];
     uint32_t m, n = note < RH_KEY_LO ? RH_KEY_LO : note > RH_KEY_LO + RH_NKEY - 1u ? RH_KEY_LO + RH_NKEY - 1u : note;
     const rh_key_t *k = &RH_KEYS[n - RH_KEY_LO];
-    int32_t bark_s = ep_knob(t->p[P_E1], 64.0f), bark_g = (int32_t)(4294967296.0f / (float)bark_s + 0.5f);
+    int32_t bark_s = ep_knob(mc_lvl(t, MC_BITE, t->p[P_E1], 0, 127), 64.0f),   /* (and Dock's Bite) */
+            bark_g = (int32_t)(4294967296.0f / (float)bark_s + 0.5f);
     int32_t bell = ep_knob(t->p[P_E2], 32.0f), u;
     v->k = k;
     v->k_dec = (int32_t)RH_DECAY_K[fr_step(clamp(t->p[P_E4], 0, 127), fr_off(t, FR_DEC), FR_SPO_EP, 0, 127)];
@@ -221,7 +222,8 @@ static void rh_init(const track_t *t, ep_voice_t *v, uint32_t note, uint32_t vel
         }
     }
     v->note = (uint8_t)note; v->vel = (uint8_t)vel;
-    v->off = k->off + ty->off_delta + t->p[P_E0] * (1 << 18);      /* TONE: +-0.5 gap */
+    /* TONE: +-0.5 gap (and Dock's Tone, dock_macro.c) */
+    v->off = k->off + ty->off_delta + mc_add(t, MC_TONE, t->p[P_E0], 1, 1, -64, 63) * (1 << 18);
     v->gain = rh_mul16(rh_mul16(k->gain, bark_g), ty->bark_g);
     u = v->off;
     v->Hprev = rh_hermite(RH_PHI[k->fam], RH_SLOPE[k->fam], (int64_t)u * u);
@@ -431,7 +433,7 @@ static void ep_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vm
 /* the TREM: a Suitcase's stereo vibrato (pans with the LFO) on every TYPE but WURLY, whose tremolo is mono */
 static int32_t ep_trem(const track_t *t)               /* TREM, through Dock's common DEPTH (dock_front.c) */
 {
-    return fr_lvl(clamp(t->p[P_E7], 0, 127), fr_off(t, FR_DEPTH), 0, 127);
+    return mc_lvl(t, MC_SPACE, fr_lvl(clamp(t->p[P_E7], 0, 127), fr_off(t, FR_DEPTH), 0, 127), 0, 127);   /* (Space) */
 }
 static int ep_stereo(const track_t *t) { return ep_trem(t) > 0 && ep_type(t) != EPT_WURLY; }
 

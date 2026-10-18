@@ -1840,6 +1840,12 @@ static void page_knob(uint32_t k, int32_t s)
         motion_knob(k, s);
         return;
     }
+#if DOCK_BAND
+    if (ui.home) {                                      /* Dock: the macros, the member's or the band's (ui_dock.c) */
+        dock_macro_turn(k, s);
+        return;
+    }
+#endif
     momentary_take(k);
     if (ui.home) {                                      /* Stage: the selected track's engine's four, as its pages; they
                                                          * drop in */
@@ -2281,7 +2287,11 @@ static void ui_input(void)
         open_family(FAM_SEQ);
     }
     if (home == BT_TAP && ui.home && !pop.on) {         /* HOME acts on release (a hold opens the menu); on HOME: its */
-        ui.home_pg = (uint8_t)!ui.home_pg;              /* other page (ui_view.c) */
+#if DOCK_BAND                                           /* other page (ui_view.c); Dock: PART, BAND, the chord wheel */
+        dock_home_tap();
+#else
+        ui.home_pg = (uint8_t)!ui.home_pg;
+#endif
         ui.force = 1;
     } else if (home == BT_TAP) {
         go_home();                                      /* (to the page it was on) */

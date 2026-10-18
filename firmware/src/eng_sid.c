@@ -417,7 +417,7 @@ static void sid_render_into(track_t *t,voice_t *v,int32_t *out,uint32_t n,const 
         s->pt_held = (uint32_t)clamp(p[P_E3] * 32 + (sync || ring ? 0 : shp / 32), 0, 4095) << 20;
         fcr = clamp(p[P_E4] * 16 + (p[P_E4] >> 3) + (m->cutoff >> 4), 0, 2047);
         g = gt[fcr >> 4] + (((gt[(fcr >> 4) + 1] - gt[fcr >> 4]) * (fcr & 15)) >> 4);
-        kd = SID_RES_K[model][clamp(p[P_E5], 0, 15)];
+        kd = SID_RES_K[model][mc_lvl(t, MC_BITE, clamp(p[P_E5], 0, 15), 0, 15)];   /* (Dock's Bite) */
         if(!s->filter_valid || s->fc_key!=g || s->kd_key!=kd){
             tsvf_coef_gk(&s->filter_cache,g,kd);s->fc_key=g;s->kd_key=kd;s->filter_valid=1;
         }

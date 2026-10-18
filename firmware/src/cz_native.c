@@ -192,6 +192,7 @@ static __attribute__((noinline)) void cz_native_render(track_t *t,voice_t *v,int
         depth*=1.0f-(float)((127u-v->vel)*wv)*(1.0f/(127.0f*15.0f));
         uint32_t kf=b[18u+off],kfnote=v->note>36u?v->note-36u:0u;
         depth*=(!kf || !kfnote)?1.0f:96.0f/(float)(96u+kf*kfnote);
+        if(mc_off(t,MC_BITE))depth*=fr_mul(mc_off(t,MC_BITE)/2);   /* Dock's Bite: the DCW sweep x4 .. /4 */
         float det=l?((float)b[3]+(float)(b[2]>>2)*(1.0f/64.0f))*(b[1]?-1.0f:1.0f):0.0f;
         float nt=fm_clampf((float)m->pitch16*(1.0f/16.0f)+oct+vib+pitch+det,0.0f,2047.0f/16.0f);
         cz_native_freq_t *f=&c->native_freq;

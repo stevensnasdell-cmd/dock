@@ -112,7 +112,7 @@ static void juno_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     fc = fm_clampf(fc, 10.0f, 0.45f * (float)FS);
     float g = fm_tanf(3.14159265f * fc / (float)FS), G = g / (1.0f + g), B = 1.0f - G;
     float G2 = G * G, G4 = G2 * G2;
-    float r = (float)clamp(p[P_E6], 0, 127) * (1.0f / 127.0f), k = 4.2f * r;
+    float r = (float)mc_lvl(t, MC_BITE, clamp(p[P_E6], 0, 127), 0, 127) * (1.0f / 127.0f), k = 4.2f * r;   /* (Bite) */
     float inv = 1.0f / (1.0f + k * G4), comp = 1.0f + 0.35f * k;   /* (some of the bass resonance takes back) */
     float Gh = JUNO_HPF_G[hpf];
     float z0 = s->z[0], z1 = s->z[1], z2 = s->z[2], z3 = s->z[3], zh = s->zh, sub = s->sub ? 1.0f : -1.0f;

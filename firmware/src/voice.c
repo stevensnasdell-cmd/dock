@@ -853,6 +853,7 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
     int16_t ld[4] = {p[P_LD_PIT], p[P_LD_FLT], p[P_LD_SHP], p[P_LD_AMP]};   /* LFO DEST (Dock: through DEPTH) */
     if (fr_off(t, FR_DEPTH))
         fr_ldepth(t, ld);
+    int32_t mc_cut = mc_cutoff(t), mc_shp = mc_shape(t);   /* Dock's Tone and Bite on the filter / the shape */
     if (ENGINES[eng_idx(t->eng_req)] == &ENG_DRUM) {
         midi_bend_q8[ti] = midi_bend_target[ti] = 0;
     } else {
@@ -948,6 +949,8 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
         if (mod.on){
             AP_START(mod_start);mod_voice(t,v,&m,m.fine);AP_END(AP_MODULATION,mod_start);
         }
+        m.cutoff += mc_cut;                             /* (dock_macro.c: 0 but while a macro turns them) */
+        m.shape += mc_shp;
         /* 1/16 st and 1/4096 -> Q24 octaves: the voice's own offset (the matrix's pitch too), without TUNE and bend */
         m.plog = (m.pitch16 - tune - bend16 - (int32_t)v->note * 16) * 87381 + (m.fine - tune_fine - bend_fine) * 5909;
         engine_render(t,v,e,spread_on>v->side?spread_buf:out,n,&m);

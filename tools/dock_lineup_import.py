@@ -73,7 +73,7 @@ def load(path, rename=None):
     m = j.get("macros", [[0] * 4] * 4)
     if not isinstance(m, list) or len(m) != 4 or any(not isinstance(x, list) or len(x) != 4 for x in m):
         raise Bad(f"{path}: macros must be four rows of four")
-    r["macros"] = [[_int(x, -128, 127, "macro") for x in row] for row in m]
+    r["macros"] = [[_int(x, -64, 63, "macro") for x in row] for row in m]   # Tone Bite Shape Space per part (0: as made)
     g = j.get("groove", [0] * 4)
     if not isinstance(g, list) or len(g) != 4:
         raise Bad(f"{path}: groove must be four numbers")

@@ -591,6 +591,7 @@ static int up_load_to(uint32_t k,uint32_t tr)
         t->preset = 0;
 #if DOCK_BAND
         memset(dock_front[tr % NPART], 0, sizeof dock_front[0]);   /* Dock's common ENV / LFO: the sound as kept */
+        memset(dock_macro[tr % NPART], 0, sizeof dock_macro[0]);   /* .. its macros */
 #endif
         if (up_native_cz(r))up_cz_raw(r,cz_patch[tr].raw);
         if(r->engine==ENGI_DRUM){memset(&drum_patch[tr],0,sizeof(drum_patch_t));if(r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID)up_drum_raw(r,&drum_patch[tr]);}

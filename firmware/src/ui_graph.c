@@ -536,7 +536,7 @@ static void graph_wheel(const track_t *t, uint16_t c)
     uint32_t k;
     static const char *const names[9] = {"16", "5.3", "8", "4", "2.7", "2", "1.6", "1.3", "1"};
     for (k = 0; k < 9u; k++) {
-        int32_t x = 11 + (int32_t)k * 25, level = drw_level(t->p, k);
+        int32_t x = 11 + (int32_t)k * 25, level = drw_level(t->p, k, 0);
         if (t->p[P_E4] && k == 8u) level = 0; /* DSP's percussion cancels the 1-foot bar. */
         int hot = ui.hot_t && cur_page()->id[0] == P_E0 &&
                   (ui.hot_col == 0u || ui.hot_col == (k < 2u ? 1u : k < 4u ? 2u : 3u));

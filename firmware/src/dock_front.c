@@ -35,14 +35,19 @@
 enum { FR_ATK, FR_DEC, FR_SUS, FR_REL, FR_RATE, FR_DEPTH, FR_N };
 #define FR_MIN (-64)
 #define FR_MAX 63
+#include "dock_macro.c"                                 /* the macros: Shape adds its share to these (mc_fr) */
 
 #if DOCK_BAND
 static int16_t dock_front[NPART][FR_N];                 /* each part's offsets (the ENV / LFO pages write them) */
-/* part t's offset k: what every engine reads (the Shape macro will add its share here) */
+/* part t's offset k: what every engine reads, the ENV / LFO page's plus the Shape macro's share */
 static inline int32_t fr_off(const track_t *t, uint32_t k)
 {
     uint32_t i = (uint32_t)(t - trk);
-    return i < NPART ? dock_front[i][k % FR_N] : 0;
+    int32_t o;
+    if (i >= NPART)
+        return 0;
+    o = dock_front[i][k % FR_N] + mc_fr(t, k % FR_N);
+    return o < FR_MIN ? FR_MIN : o > FR_MAX ? FR_MAX : o;
 }
 static inline int fr_any(const track_t *t, uint32_t k0, uint32_t k1)   /* any of offsets k0..k1 off the middle */
 {

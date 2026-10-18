@@ -689,6 +689,7 @@ typedef struct {
     int16_t p[P_COUNT];
 #if DOCK_BAND
     int16_t front[FR_N];         /* Dock's common ENV / LFO offsets (dock_front.c) */
+    int16_t macro[MC_N];         /* .. and its macros (dock_macro.c) */
 #endif
     step_snapshot_t step[NSTEP];
     motion_store_t motion_backup; /* one track only, swaps with the shared event pool on undo */
@@ -731,6 +732,7 @@ static uint32_t track_sig(const track_t *t)      /* the sound (an FM6 track's pa
     h = fnv(h,&drum_patch[k],sizeof(drum_patch_t));
 #if DOCK_BAND
     h = fnv(h, dock_front[k % NPART], sizeof dock_front[0]);
+    h = fnv(h, dock_macro[k % NPART], sizeof dock_macro[0]);
 #endif
     for (uint32_t j = 0; j < motion.count; j++)
         if ((motion.event[j].place >> 6) == k) h = fnv(h, &motion.event[j], sizeof motion.event[j]);
@@ -819,6 +821,7 @@ static void load_begin(track_t *t, uint32_t what)
     u->drum=drum_patch[i];
 #if DOCK_BAND
     memcpy(u->front, dock_front[i % NPART], sizeof u->front);
+    memcpy(u->macro, dock_macro[i % NPART], sizeof u->macro);
 #endif
     u->pat = pat_sig[i];
     u->patn = pat_last[i];
@@ -912,6 +915,11 @@ static void undo_step(int redo)
             int16_t v = dock_front[trk_index(t) % NPART][i];
             dock_front[trk_index(t) % NPART][i] = u->front[i];
             u->front[i] = v;
+        }
+        for (i = 0; i < MC_N; i++) {                /* (and its macros) */
+            int16_t v = dock_macro[trk_index(t) % NPART][i];
+            dock_macro[trk_index(t) % NPART][i] = u->macro[i];
+            u->macro[i] = v;
         }
 #endif
     }
@@ -1013,6 +1021,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     memset(&drum_patch[t-trk],0,sizeof(drum_patch_t));
 #if DOCK_BAND
     memset(dock_front[trk_index(t) % NPART], 0, sizeof dock_front[0]);   /* Dock's common ENV / LFO: the sound as made */
+    memset(dock_macro[trk_index(t) % NPART], 0, sizeof dock_macro[0]);   /* .. its macros (browsing starts neutral) */
 #endif
     for (i = 0; i < P_E0; i++)                        /* the rest of the sound to its defaults: a preset */
         if (!param_kept(i))                           /* sounds the same after any edit */

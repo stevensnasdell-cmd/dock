@@ -85,7 +85,8 @@ static void selftest_room(const int16_t fx[3][4], uint32_t send)
 }
 /* bass riff on ch 1, a chord on ch 2, a lead note on ch 3, 4 s; three times: the power-on sounds (Yacht) in a plate
  * with a delay, then the organs (Mod's Keys and Lead: WHEEL MOD HAMMOND, VOX COMBO) in Goth's wash (reverb, delay,
- * chorus), then the plucks (Hot's Bass and Lead: PLUCK UPRIGHT, SURF TWANG) in Hot's spring and slapback */
+ * chorus), then the plucks (Hot's Bass and Lead: PLUCK UPRIGHT, SURF TWANG) in Hot's spring and slapback; each with
+ * the macros (dock_macro.c) turned from halfway */
 int main(int argc, char **argv)
 {
     static const uint8_t riff[8] = {36, 36, 48, 36, 39, 36, 43, 46};
@@ -122,6 +123,13 @@ int main(int argc, char **argv)
                 }
                 if (step == 4u)
                     dock_midi(0x92, 72, 110);
+                if (step == 8u) {                       /* the macros (HOME's knobs) from halfway: the Keys' Tone */
+                    dock_macro[DOCK_KEYS][MC_TONE] = (int16_t)(pass == 1u ? -30 : 30);   /* and Bite, the band's */
+                    dock_macro[DOCK_BASS][MC_BITE] = dock_macro[DOCK_LEAD][MC_BITE] = 24;   /* Bite, Shape, Space */
+                    dock_macro[DOCK_LEAD][MC_SHAPE] = 20;
+                    for (uint32_t k = 0; k < NPART; k++)
+                        dock_macro[k][MC_SPACE] = 30;
+                }
                 if (step == 7u) {
                     dock_midi(0x81, 60, 0); dock_midi(0x81, 63, 0); dock_midi(0x81, 67, 0);
                     dock_midi(0x82, 72, 0);
@@ -137,6 +145,7 @@ int main(int argc, char **argv)
         }
         if (held)
             dock_midi(0x80, held, 0);
+        memset(dock_macro, 0, sizeof dock_macro);
         printf("selftest: pass %u, %u frames at %u Hz, voices now %u/%u/%u\n", pass, total, FS, dock_voices(0),
                dock_voices(1), dock_voices(2));
     }

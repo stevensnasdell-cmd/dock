@@ -295,9 +295,35 @@ static void dock_simplify(void)
         dcheck("  OCT-: back to the section list", smap.on);
         press(B_OCTDN);
         dcheck("  OCT- there: HOME", !smap.on && ui.home == 1u);
+        dcheck("HOME: the knobs move the member (PART)", ui.home_pg == 0u && !dock_macro_band);
+        {   /* the macros: PART the selected member's, BAND Bass Keys Lead's (Space: the drummer's too), each from its own */
+            uint32_t sel = song.sel % NPART, m;
+            int ok = 1;
+            memset(dock_macro, 0, sizeof dock_macro);
+            turn(EN_K1, 5);
+            for (m = 0; m < NPART; m++) ok &= dock_macro[m][MC_TONE] == (m == sel ? 5 * MC_DETENT : 0);
+            dcheck("  KNOB 1 on HOME (PART): the member's Tone, no one else's", ok);
+            press(B_HOME);
+            dock_macro[0][MC_SPACE] = 20;
+            turn(EN_K2, -3);
+            turn(EN_K4, 4);
+            for (m = 0, ok = 1; m < NPART; m++)
+                ok &= dock_macro[m][MC_BITE] == (m < 3u ? -3 * MC_DETENT : 0) &&
+                      dock_macro[m][MC_SPACE] == (m ? 4 * MC_DETENT : 20 + 4 * MC_DETENT);
+            dcheck("  BAND: Bite on Bass, Keys, Lead; Space on all four, each from its own value", ok);
+            turn(EN_K3, 100);
+            for (m = 0, ok = 1; m < 3u; m++) ok &= dock_macro[m][MC_SHAPE] == MC_MAX;
+            dcheck("  to the end and no further", ok);
+            press(B_HOME);
+            press(B_HOME);
+            memset(dock_macro, 0, sizeof dock_macro);
+        }
         press(B_HOME);
-        dcheck("HOME tapped on HOME: the chord wheel (for now)", ui.home == 1u && ui.home_pg == 1u);
+        dcheck("HOME tapped on HOME: BAND", ui.home == 1u && ui.home_pg == 0u && dock_macro_band);
         press(B_HOME);
+        dcheck("  again: the chord wheel", ui.home == 1u && ui.home_pg == 1u);
+        press(B_HOME);
+        dcheck("  again: PART", ui.home == 1u && ui.home_pg == 0u && !dock_macro_band);
     }
 }
 

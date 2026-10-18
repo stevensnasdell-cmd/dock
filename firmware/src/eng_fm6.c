@@ -53,6 +53,7 @@ static struct {                                  /* the patch through the macros
     uint8_t gen, ok;
     int16_t e[7];                                /* P_E0..P_E6 it was made with */
     int16_t fr[FR_N];                            /* .. and Dock's common ENV / LFO offsets (dock_front.c) */
+    int16_t bite;                                /* .. and Dock's Bite (dock_macro.c) */
     int32_t dt[6];                               /* DTUN: per operator, Q24 log2 */
 } fm6_eff[NTRK];
 
@@ -311,7 +312,7 @@ static int fm6_eff_build(const track_t *t)
             ;
         for (j = 0; k == 7u && j < FR_N && fm6_eff[tr].fr[j] == fr_off(t, j); j++)
             ;
-        if (k == 7u && j == FR_N)
+        if (k == 7u && j == FR_N && fm6_eff[tr].bite == mc_off(t, MC_BITE))
             return 0;
     }
     fm6_eff[tr].gen = fm6_pgen[tr];
@@ -320,6 +321,7 @@ static int fm6_eff_build(const track_t *t)
         fm6_eff[tr].e[k] = e[k];
     for (j = 0; j < FR_N; j++)
         fm6_eff[tr].fr[j] = (int16_t)fr_off(t, j);
+    fm6_eff[tr].bite = (int16_t)mc_off(t, MC_BITE);
     {
         uint8_t *p = fm6_eff[tr].p;
         uint32_t alg = e[0] >= 1 && e[0] <= 32 ? (uint32_t)e[0] - 1u : p[FP_ALG] & 31u;
@@ -342,6 +344,11 @@ static int fm6_eff_build(const track_t *t)
             for (j = 0; j < 4u; j++)
                 op[FP_R1 + j] = (uint8_t)clamp(op[FP_R1 + j] - meg, 0, 99);
             op[FP_KVS] = (uint8_t)clamp(op[FP_KVS] + e[5], 0, 7);
+            if (fm6_eff[tr].bite) {                      /* Dock's Bite: the modulators' attack peak (L1) and their
+                                                          * level, the strike's edge (dock_macro.c) */
+                op[FP_L1] = (uint8_t)fr_lvl(op[FP_L1], fm6_eff[tr].bite, 0, 99);
+                op[FP_OL] = (uint8_t)fr_lvl(op[FP_OL], fm6_eff[tr].bite / 4, 0, 99);
+            }
         }
         if (fr_any(t, FR_ATK, FR_DEPTH))
             fm6_front(t, p);

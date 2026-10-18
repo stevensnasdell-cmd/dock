@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Steven Snasdell
-# Dock's quick host checks (no JieLi toolchain needed): the band's voices, the JUNO, EP, organ and PLUCK engines, the common ENV / LFO, the Line-ups' rooms, saving them, the UI on Dock and on Melodee's own rules,
+# Dock's quick host checks (no JieLi toolchain needed): the band's voices, the JUNO, EP, organ and PLUCK engines, the common ENV / LFO, the macros, the Line-ups' rooms, saving them, the UI on Dock and on Melodee's own rules,
 # the emulator's boot and keys. Needs build/gen (emu/build.sh makes it).   tests/dock_tests.sh
 set -e
 cd "$(dirname "$0")/.."
@@ -21,6 +21,8 @@ cc $F -o $OUT/organ_pluck_test tests/organ_pluck_test.c -lm
 run "organ (WHEEL) and PLUCK: sounds, rotary, upright, cost" $OUT/organ_pluck_test
 cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_front_test tests/dock_front_test.c -lm
 run "common ENV and LFO: every engine, 0 = as made, own pages, saving" $OUT/dock_front_test
+cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_macro_test tests/dock_macro_test.c -lm
+run "the macros: Tone Bite Shape Space on every engine, 0 = as made, BAND, saving" $OUT/dock_macro_test
 cc $F -DMELODEE_USB_AUDIO=1 -o $OUT/dock_ui_test tests/dock_ui_test.c -lm
 run "the band on the UI" $OUT/dock_ui_test
 cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_level_test tests/dock_level_test.c -lm

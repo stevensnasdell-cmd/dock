@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Steven Snasdell */
 /* Dock's HOME (docs/design/DOCK_STYLE.md §6, the reference docs/design/dock/ref/home.png), in place of Melodee's Stage
- * under DOCK_BAND: the header (the DOCK wordmark, the Line-up, the clock, the BPM), the knob strip always there (the
- * selected member's four; Tone / Bite / Shape / Space once the macros exist), a row per part (its badge, its sound, a
- * five-step meter of what it plays) and the band's eight voices coloured by owner. Each zone remembers what it drew
+ * under DOCK_BAND: the header (the DOCK wordmark, the Line-up, the clock, the BPM, PART or BAND), the knob strip always
+ * there (the macros: Tone, Bite, Shape, Space, dock_macro.c), a row per part (its badge, its sound, a five-step meter
+ * of what it plays) and the band's eight voices coloured by owner. Each zone remembers what it drew
  * and redraws only when that changes; the meters every other frame. Built on Melodee's canvas (gfx.c) and grid (ui.c). */
 #include "dock_lineups.c"                               /* the Line-ups: SELECT on HOME (dock_lineup_turn) */
 #define DK_ROW_Y 84                                     /* the rows: 84 + 32 k, 30 tall */
@@ -13,6 +13,33 @@
 #define DK_VOX_Y 212                                    /* the voices' bar */
 
 #define DK_BROWSE_MS 2000u                              /* the browse strip stays this long after a sound changes */
+
+/* HOME's knobs, the macros (dock_macro.c): KNOB 1-4 Tone, Bite, Shape, Space of the selected member (PART) or of the
+ * band (BAND: Bass, Keys and Lead each from its own value; Space the drummer's too). HOME tapped on HOME turns PART ->
+ * BAND -> the chord wheel (ui_view.c, the knobs still the band's) -> PART */
+static uint8_t dock_macro_band;
+static const char *const MC_NAME[MC_N] = {"Tone", "Bite", "Shape", "Space"};
+#define MC_DETENT 2                                     /* steps a detent: the middle to an end in 32 */
+static void dock_macro_turn(uint32_t k, int32_t s)
+{
+    uint32_t i;
+    k %= MC_N;
+    for (i = 0; i < NPART; i++)
+        if (dock_macro_band ? i != DOCK_DRUMS || k == MC_SPACE : i == song.sel % NPART)
+            dock_macro[i][k] = (int16_t)clamp(dock_macro[i][k] + s * MC_DETENT, MC_MIN, MC_MAX);
+}
+static void dock_home_tap(void)
+{
+    if (ui.home_pg) {                                   /* the chord wheel -> PART */
+        ui.home_pg = 0;
+        dock_macro_band = 0;
+    } else if (!dock_macro_band) {                      /* PART -> BAND */
+        dock_macro_band = 1;
+    } else {                                            /* BAND -> the chord wheel */
+        ui.home_pg = 1;
+    }
+    ui.force = 1;
+}
 static struct {
     uint32_t head, cell[4], row[NPART], vox, strip;
     uint32_t snd, browse_ms;                            /* the selected member's sound; when it last changed (| 1) */
@@ -57,60 +84,77 @@ static void dk_head(void)
 {
     char b[8];
     uint32_t sig, ext = midi_clock.mode != 0u, mine = (dock_mine >> dock_lineup) & 1u;
-    int32_t x;
+    int32_t x, tag;
     if (ui.msg_t || ui.layer || song.rec || chain.running || ui.bpm_t) {
         dk.head = 0;
         draw_head();
         return;
     }
     fmt_int(b, song.g[G_BPM]);
-    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u + dock_lineup * 8u + mine * 256u, b) + ux.gen * 977u +
-          ux.pal * 31u;
+    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u + dock_lineup * 8u + mine * 256u + dock_macro_band * 512u, b) +
+          ux.gen * 977u + ux.pal * 31u;
     if (!ui.force && sig == dk.head)
         return;
     dk.head = sig;
     ui.head_sig = 0;                                    /* (Melodee's header draws itself whole when it comes back) */
     cv_begin(240, H_HEAD, T_BG);
     cv_disc(12, H_HEAD / 2, 8, T_TEXT, !ext);           /* the clock and the tempo at the left */
-    cv_text_on(22, ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG);
+    tag = cv_text_on(22, ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG) + 6;
+    /* what the knobs move: PART (the selected member, MID) or BAND (the whole band, TEXT) */
+    tag = cv_text_on(tag, ty_y(H_HEAD / 2, TY_LB), TY_LB, dock_macro_band ? "BAND" : "PART", dock_macro_band ? T_TEXT : T_MID,
+                     T_BG);
     x = 232 - text_w(TY_WM, "DOCK");                    /* the Line-up's name and DOCK at the right: "Yacht DOCK" */
     cv_text_on(x, ty_y(H_HEAD / 2, TY_WM), TY_WM, "DOCK", T_TEXT, T_BG);
     {
         const char *nm = DOCK_LINEUPS[dock_lineup].name;
-        int32_t w = text_w(TY_TX, nm) < 96 ? text_w(TY_TX, nm) : 96;
+        int32_t room = x - 16 - tag - (mine ? DK_MINE_D + 5 : 0);   /* (never over PART / BAND: a size down first) */
+        const aafont_t *nf = ty_fit(TY_TX, nm, room < 96 ? room : 96);
+        int32_t w = text_w(nf, nm) < 96 ? text_w(nf, nm) : 96;
         if (mine) {                                     /* "Yacht • DOCK": the dot in TEXT (status, not a member) */
             cv_disc(x - 8 - DK_MINE_D / 2, H_HEAD / 2 + 1, DK_MINE_D, T_TEXT, 0);
             x -= DK_MINE_D + 5;
         }
-        cv_free_text(x - 8 - w, ty_y(H_HEAD / 2, TY_TX), TY_TX, nm, T_MID, T_BG, 96);
+        cv_free_text(x - 8 - w, ty_y(H_HEAD / 2, nf), nf, nm, T_MID, T_BG, 96);
     }
     cv_blit(0, Y_HEAD);
 }
 
-/* the knob strip: four cells 57 x 48, the label and a gauge; the knob turning fills its cell with the member's colour */
+/* the knob strip: the macros, four cells 57 x 48, the name and a gauge from its middle (the sound as made: a dot
+ * there) to the offset; PART: the selected member's, in TEXT; BAND: Bass, Keys and Lead's, a line each in its colour.
+ * The knob turning fills its cell: PART with the member's colour, BAND with TEXT (the whole band) */
+#define DK_GX 4                                         /* the gauge: x, width, its middle */
+#define DK_GW (CARD_W - 9)
+#define DK_GC (DK_GX + DK_GW / 2)
+static void dk_gauge_line(int32_t v, int32_t y, int32_t h, uint16_t c)
+{
+    int32_t px = v * (DK_GW / 2 - 1) / -MC_MIN;
+    cv_rect(px < 0 ? DK_GC - 1 + px : DK_GC - 1, y, (px < 0 ? -px : px) + 2, h, c);
+}
 static void dk_cells(void)
 {
-    const page_t *sp = stage_page();
     uint16_t mc = T_TRK(song.sel);
-    uint32_t c;
-    for (c = 0; c < 4u; c++) {
-        int16_t *vp;
-        const param_desc_t *d = page_desc(sp, c, &vp);
-        int ok = d && vp && d->label && d->label[0] != '-';
-        const char *lab = ok ? cell_label(stage_label(c, d), CARD_W - 8) : "";   /* (its short form if need be) */
-        int32_t r = ok ? RATIO(d, *vp) : -1;
+    uint32_t c, k, band = dock_macro_band;
+    for (c = 0; c < MC_N; c++) {
+        const char *lab = cell_label(MC_NAME[c], CARD_W - 8);   /* (its short form if need be: Melodee Pixel) */
+        const aafont_t *lf = ty_fit(TY_LB, lab, CARD_W - 8);
         uint32_t hot = c == ui.hot_col && ui.hot_t, sig;
-        uint16_t bg = hot ? mc : T_SURF, fg = hot ? T_INK : T_TEXT;
-        sig = str_hash(1u + hot * 2u + (uint32_t)(r + 2) * 7u, lab) + ux.gen * 977u + ux.pal * 31u + song.sel * 13u;
+        uint16_t bg = hot ? band ? T_TEXT : mc : T_SURF, fg = hot ? T_INK : T_TEXT;
+        sig = 1u + hot * 2u + band * 4u + song.sel * 13u + ux.gen * 977u + ux.pal * 31u;
+        for (k = 0; k < NPART; k++)
+            sig = sig * 131u + (uint32_t)(dock_macro[k][c] + 64);
         if (!ui.force && sig == dk.cell[c])
             continue;
         dk.cell[c] = sig;
         cv_begin(CARD_W, CARD_H, T_BG);
         cv_rrect(0, 0, CARD_W, CARD_H, 8, bg, T_BG);
-        cv_free_text(4, ty_y(19, ty_fit(TY_LB, lab, CARD_W - 8)), ty_fit(TY_LB, lab, CARD_W - 8), lab, fg, bg, CARD_W - 8);
-        if (r >= 0) {                                   /* the gauge: 47 x 3, its track and how far */
-            cv_rrect(4, 34, CARD_W - 9, 3, 1, hot ? ux_mix(mc, T_INK, 30) : T_LINE, bg);
-            cv_rrect(4, 34, 1 + (CARD_W - 10) * clamp(r, 0, 1000) / 1000, 3, 1, fg, bg);
+        cv_free_text(4, ty_y(19, lf), lf, lab, fg, bg, CARD_W - 8);
+        if (band) {                                     /* Bass, Keys, Lead: a line each, 2 px */
+            cv_rrect(DK_GX, 32, DK_GW, 6, 1, hot ? ux_mix(bg, T_INK, 30) : T_LINE, bg);
+            for (k = 0; k < 3u; k++)
+                dk_gauge_line(dock_macro[k][c], 32 + 2 * (int32_t)k, 2, T_TRK(k));
+        } else {
+            cv_rrect(DK_GX, 34, DK_GW, 3, 1, hot ? ux_mix(bg, T_INK, 30) : T_LINE, bg);   /* the gauge's track */
+            dk_gauge_line(dock_macro[song.sel % NPART][c], 34, 3, fg);
         }
         cv_blit((uint32_t)CARD_X(c), Y_LABEL);
     }

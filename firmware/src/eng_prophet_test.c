@@ -36,7 +36,7 @@ typedef struct {
     uint32_t ia,ib;
     const float *wheel,*wheel_pitch;
 } p5_render_params_t;
-typedef struct { p5_voice_t voice[P5_POLY]; uint32_t lfo; int32_t lfo_value, last_pitch, mod_noise, dc_x1, dc_y1; float wheel[CTL * P5_OVERSAMPLE], wheel_pitch[CTL * P5_OVERSAMPLE]; uint8_t value[56],input_key[56],base_valid; int16_t base_e[8],base_fr[FR_N]; int32_t coarse_a,coarse_b,fixed_b,fine_b; p5_render_params_t base; } p5_part_t;
+typedef struct { p5_voice_t voice[P5_POLY]; uint32_t lfo; int32_t lfo_value, last_pitch, mod_noise, dc_x1, dc_y1; float wheel[CTL * P5_OVERSAMPLE], wheel_pitch[CTL * P5_OVERSAMPLE]; uint8_t value[56],input_key[56],base_valid; int16_t base_e[8],base_fr[FR_N],base_mc[MC_N]; int32_t coarse_a,coarse_b,fixed_b,fine_b; p5_render_params_t base; } p5_part_t;
 static p5_part_t *p5_part(uint32_t part);
 static p5_patch_t p5_patch[NPART] __attribute__((section(".pool")));
 static uint8_t p5_ready[NPART];
@@ -190,8 +190,10 @@ static __attribute__((section(".dsp_text"))) void p5_mod_samples(p5_part_t *s,co
 }
 static __attribute__((noinline)) void p5_cache_update(track_t *t,p5_part_t *s,const uint8_t *p)
 {
-    int16_t fr[FR_N];for(uint32_t k=0;k<FR_N;k++)fr[k]=(int16_t)fr_off(t,k);
-    if(s->base_valid && !memcmp(s->input_key,p,55u) && !memcmp(s->base_e,t->p+P_E0,sizeof s->base_e) && !memcmp(s->base_fr,fr,sizeof fr))return;
+    int16_t fr[FR_N],mc[MC_N];for(uint32_t k=0;k<FR_N;k++)fr[k]=(int16_t)fr_off(t,k);
+    for(uint32_t k=0;k<MC_N;k++)mc[k]=(int16_t)mc_off(t,k);
+    if(s->base_valid && !memcmp(s->input_key,p,55u) && !memcmp(s->base_e,t->p+P_E0,sizeof s->base_e) && !memcmp(s->base_fr,fr,sizeof fr) &&
+       !memcmp(s->base_mc,mc,sizeof mc))return;
     memcpy(s->input_key,p,55u);
     for(uint32_t k=0;k<55u;k++)s->value[k]=(uint8_t)p5_value(p,k);
     s->value[55]=16;                                     /* the release with RELEASE off (p5_env_tick) */
@@ -206,7 +208,14 @@ static __attribute__((noinline)) void p5_cache_update(track_t *t,p5_part_t *s,co
         s->value[P5_LFO_RATE]=(uint8_t)fr_step(s->value[P5_LFO_RATE],fr[FR_RATE],FR_SPO_LFO,0,127);
         s->value[P5_LFO_INITIAL]=(uint8_t)fr_lvl(s->value[P5_LFO_INITIAL],fr[FR_DEPTH],0,127);
     }
-    memcpy(s->base_e,t->p+P_E0,sizeof s->base_e);memcpy(s->base_fr,fr,sizeof fr);s->base_valid=1;
+    if(mc[MC_BITE] || mc[MC_SHAPE]){                     /* Dock's Bite: the resonance, the poly-mod amounts; Shape:
+                                                          * the filter envelope's amount (its times: fr, above) */
+        s->value[P5_RESONANCE]=(uint8_t)mc_lvl(t,MC_BITE,s->value[P5_RESONANCE],0,127);
+        s->value[P5_POLY_ENV]=(uint8_t)fr_lvl(s->value[P5_POLY_ENV],mc[MC_BITE]/2,0,127);   /* (half: it can retune A) */
+        s->value[P5_POLY_B]=(uint8_t)fr_lvl(s->value[P5_POLY_B],mc[MC_BITE]/2,0,127);
+        s->value[P5_ENV_FILTER]=(uint8_t)mc_lvl(t,MC_SHAPE,s->value[P5_ENV_FILTER],0,127);
+    }
+    memcpy(s->base_e,t->p+P_E0,sizeof s->base_e);memcpy(s->base_fr,fr,sizeof fr);memcpy(s->base_mc,mc,sizeof mc);s->base_valid=1;
     const uint8_t *q=s->value;int curtis=!!p[P5_FILTER_REV];p5_render_params_t *c=&s->base;
     s->coarse_a=(clamp(q[P5_FREQ_A],0,96)/2-12)*16+t->p[P_E2]*16;
     s->coarse_b=(clamp(q[P5_FREQ_B],0,96)/2-12)*16+t->p[P_E3]*16;
@@ -214,6 +223,7 @@ static __attribute__((noinline)) void p5_cache_update(track_t *t,p5_part_t *s,co
     s->fine_b=q[P5_FINE_B]*100/128;
     int32_t cut=q[P5_CUTOFF],res=clamp(q[P5_RESONANCE]+t->p[P_E1],0,127);
     c->cut=(float)(1618+cut*236+(curtis?0:(127-cut>66?66:127-cut)*38)+t->p[P_E0]*256)/256.0f;
+    if(mc[MC_TONE])c->cut+=(float)(mc[MC_TONE]*7)/8.0f;  /* Dock's Tone: +-56 steps of the table, 4 octaves */
     c->k=(float)(res*(curtis?19200:18800)/127)/4096.0f;
     c->filter_gain=(float)(32767-res*(curtis?100:45))/32768.0f;
     c->env_amount=(float)(q[P5_ENV_FILTER]*165)/256.0f;

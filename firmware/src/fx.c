@@ -734,7 +734,8 @@ static inline __attribute__((always_inline)) uint32_t fx_send_gain(const track_t
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk)))return 65536u;
 #endif
-    return (uint32_t)(t->p[P_FXSEND]+(t->p[P_FXSEND]==127))*512u;
+    uint32_t a=(uint32_t)mc_send(t,t->p[P_FXSEND]);       /* (Dock's Space: the room sends, dock_macro.c) */
+    return (a+(a==127u))*512u;
 }
 static int fx_bus_result,fx_bus_pending;
 #if MELODEE_AUDIO_PROFILE

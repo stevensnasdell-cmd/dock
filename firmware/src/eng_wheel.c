@@ -120,11 +120,13 @@ typedef struct { drw_trk_t t; drw_vc_t v[NPOLY]; } drw_part_t;   /* the part's (
 static drw_part_t *drw_of(const track_t *t);
 
 
-/* the bar level 0..8 of partial k: the registration plus SUB / BODY / TOP */
-static int32_t drw_level(const int16_t *p, uint32_t k)
+/* the bar level 0..8 of partial k: the registration plus SUB / BODY / TOP, and tilt (Dock's Tone, a bar every 16
+ * steps: + the bars above 4' up, - the bars from 8' up down) */
+static int32_t drw_level(const int16_t *p, uint32_t k, int32_t tilt)
 {
     int32_t d = DRW_REG[(uint32_t)p[P_E0] & 15u][k] - '0';
     d += k < 2u ? p[P_E1] : k < 4u ? p[P_E2] : p[P_E3];
+    d += tilt > 0 ? (k >= 4u ? tilt : 0) : (k >= 2u ? tilt : 0);
     return clamp(d, 0, 8);
 }
 
@@ -134,10 +136,14 @@ static void wheel_block(track_t *t)
     drw_trk_t *T = &drw_of(t)->t;
     const int16_t *p = t->p;
     uint32_t k, perc = (uint32_t)p[P_E4] % 7u, rot = (uint32_t)p[P_E7] % 3u;
-    int32_t s = 0, lv[DRW_NP];
+    int32_t s = 0, lv[DRW_NP], tilt = mc_off(t, MC_TONE) / 16, drv = mc_lvl(t, MC_BITE, p[P_E6], 0, 127);
+    if (rot && mc_off(t, MC_SPACE) >= 32)               /* Dock's Space past +32: the rotor fast, past -32 slow */
+        rot = 2u;
+    else if (rot && mc_off(t, MC_SPACE) <= -32)
+        rot = 1u;
     uint32_t norm;
     for (k = 0; k < DRW_NP; k++) {
-        lv[k] = perc && k == DRW_NP - 1u ? 0 : DRW_LV[drw_level(p, k)];   /* PERC on: the 1' bar is off */
+        lv[k] = perc && k == DRW_NP - 1u ? 0 : DRW_LV[drw_level(p, k, tilt)];   /* PERC on: the 1' bar is off */
         s += lv[k];
     }
     /* sum of the gains = 2.4 s / (s + 1.5) (s in units of a full bar): one bar 0.96, three 1.6,
@@ -153,8 +159,8 @@ static void wheel_block(track_t *t)
     if (fr_off(t, FR_DEC))                              /* Dock's common DEC (dock_front.c): tau x 2^(off / 16) */
         T->pdec = 65536u - fr_mulq(65536u - T->pdec, -fr_off(t, FR_DEC));
     T->clk = p[P_E5] * 180;
-    if (p[P_E6]) {                                      /* y = 6 / (2 + g) tanh(g x / 2) */
-        T->dg = 256 + p[P_E6] * 6;                      /* 1 .. 4 */
+    if (drv) {                                          /* y = 6 / (2 + g) tanh(g x / 2) (DRV, and Dock's Bite) */
+        T->dg = 256 + drv * 6;                          /* 1 .. 4 */
         T->dcomp = (6 * 256 * 256) / (512 + T->dg);
     } else {
         T->dg = 0;

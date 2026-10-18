@@ -7,8 +7,8 @@
  * A record (dock_lineup_t) is the band's full state: each part's engine, preset, every track parameter (t->p: the
  * sound, every edit, level, pan, the inserts and the effect sends) and its engine's own patch (PROPHET, CZ-1, FM6 with
  * its function settings, DRUM; JUNO, EP, WHEEL and PLUCK keep theirs in t->p), the room (Melodee's shared effects,
- * fx.c: three slots, CHAIN or SPLIT, the return) and the voice split (voice.c dock_share), with room for the macros'
- * offsets and a drum groove. The factory five are such records, made from text files (firmware/lineups/*.dock,
+ * fx.c: three slots, CHAIN or SPLIT, the return), the voice split (voice.c dock_share), each part's macros (HOME's
+ * Tone, Bite, Shape, Space: dock_macro.c) and common ENV / LFO offsets, with room for a drum groove. The factory five are such records, made from text files (firmware/lineups/*.dock,
  * tools/dock_lineup_import.py -> dock_factory.h), so a Line-up saved on the emulator can become a factory one exactly
  * as it sounds.
  *
@@ -33,7 +33,8 @@ typedef struct {
     char name[DOCK_NAME];
     uint8_t share[NPART];                               /* the voices: Bass, Keys, Lead (eight), the drummer's lane */
     dock_room_t room;
-    int8_t macro[NPART][4];                             /* (to come) each part's Tone, Bite, Shape, Space offset: 0 */
+    int8_t macro[NPART][4];                             /* each part's Tone, Bite, Shape, Space offset (dock_macro.c;
+                                                         * HOME's knobs): 0 the sound as made */
     uint8_t groove[4];                                  /* (to come) the drummer's groove: 0 */
     dock_part_t part[NPART];                            /* Bass, Keys, Lead, Drums */
     int8_t front[NPART][8];                             /* each part's common ENV / LFO offsets (dock_front.c: ATK DEC
@@ -101,6 +102,8 @@ static void dock_lineup_capture(dock_lineup_t *r, uint32_t i)
             memcpy(d->patch, &drum_patch[k], sizeof(drum_patch_t));
         for (j = 0; j < FR_N; j++)
             r->front[k][j] = (int8_t)dock_front[k][j];
+        for (j = 0; j < MC_N; j++)
+            r->macro[k][j] = (int8_t)dock_macro[k][j];
     }
 }
 
@@ -147,6 +150,8 @@ static void dock_lineup_apply(const dock_lineup_t *r)
         memset(&drum_patch[k], 0, sizeof(drum_patch_t));   /* (as a preset load: a kit's own edits only) */
         for (i = 0; i < FR_N; i++)                      /* the common ENV / LFO offsets (a factory one's: 0) */
             dock_front[k][i] = (int16_t)clamp(r->front[k][i], FR_MIN, FR_MAX);
+        for (i = 0; i < MC_N; i++)                      /* the macros (a factory one's: 0) */
+            dock_macro[k][i] = (int16_t)clamp(r->macro[k][i], MC_MIN, MC_MAX);
         if (e == ENGI_PROPHET) {
             memcpy(&p5_patch[k], d->patch, sizeof(p5_patch_t));
             if (!p5_patch_valid(&p5_patch[k]))
