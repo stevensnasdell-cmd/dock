@@ -90,7 +90,7 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 
 Power-on default: **Yacht Dock**.
 
-**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/lineups/` (built in as `firmware/src/dock_factory.h`). Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Each stores its voice split (all 1/6/1 for now); still to come per Line-up: macros, groove.
+**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/lineups/` (built in as `firmware/src/dock_factory.h`). Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Each stores its voice split (all 1/6/1 for now) and its macros (the factory ones neutral; yours as saved); still to come per Line-up: groove.
 
 **Built: the rooms.** Each Line-up sets Melodee's shared effects (three slots, CHAIN or SPLIT) and every part's sends
 when it loads: Yacht warm plate + Lead delay; Hot spring (Felucca's, ported as a new effect) + slapback; Kraut dry with
@@ -99,7 +99,7 @@ pitch shift yet). Host cost 0.35–1.2 of a PROPHET voice; buffers 4–14 KiB fr
 
 **Built: your Line-ups.** A Line-up is one record of the whole band (`firmware/src/dock_lineups.c`): each part's
 engine, preset, every parameter and its engine's own patch (level, pan, sends and inserts among them), the room and the
-voice split, with room for macro offsets and a drum groove.
+voice split, the macros and the common ENV / LFO offsets, with room for a drum groove.
 - **Hold SAVE on HOME** keeps the band as it is now as *your* version of the Line-up playing. SELECT then loads yours,
   and HOME's header marks it: a dot after the name ("Yacht • DOCK"). Power-on plays your Yacht if you saved one.
 - **Back to factory:** HOME's sheet (OCT+ held, as every page's sheet) has *Save line-up* and *Factory line-up*. The
@@ -121,7 +121,7 @@ backs out.** The FM-1's knobs **only turn** (no push switch: the firmware reads 
 
 | Control | Dock (the plan) | Today | Job |
 |---|---|---|---|
-| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value (tap HOME on HOME to switch) | the member's four engine settings (CUT, RES, ENV…) | live |
+| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value (tap HOME on HOME to switch) | ✓ Tone · Bite · Shape · Space on every engine; HOME tap: PART → BAND → chord wheel; the header says PART / BAND | live |
 | **SELECT** | On HOME: turn = change Line-up ✓. On pages: turn the pages | turn = Line-up ✓; on pages the pages ✓ (EDIT: the open section's) | both |
 | **ALGORITHM** | Pick the focused member (on pages: change the picked parameter) | picks the member ✓ | both |
 | **Black keys 1–4** (or held button + key) | Jump straight to Bass / Keys / Lead / Drums | play notes | live |
@@ -137,15 +137,15 @@ backs out.** The FM-1's knobs **only turn** (no push switch: the firmware reads 
 | **SEQ** | Clock / thru status (source, incoming BPM); tempo's new home | CLOCK page ✓ (BPM, source, incoming BPM) | — |
 | **REC** | Arm the looper for the focused member (notes, not audio); hold = clear member | nothing | live |
 | **PLAY** | Start/stop looper + internal clock (ignored when an external clock leads) | internal clock ✓ | live |
-| **HOME** | Stage view; **on HOME, tap = cycle PART → BAND → chord wheel** (the knobs shape one member, then the whole band, then Melodee's chord-wheel view, kept because it's fun); hold = menu (channels, voice split, clock, theme) | tap = chord wheel ✓; hold = menu ✓, with Band (line-up, voice split, channels) ✓ | both |
+| **HOME** | Stage view; **on HOME, tap = cycle PART → BAND → chord wheel** (the knobs shape one member, then the whole band, then Melodee's chord-wheel view, kept because it's fun); hold = menu (channels, voice split, clock, theme) | tap = PART → BAND → chord wheel ✓; hold = menu ✓, with Band (line-up, voice split, channels) ✓ | both |
 | **OCT− / OCT+** | Octave for focused member; both together = panic | ✓ (elsewhere: back / enter) | — |
 | **MASTER** | Volume | ✓ | — |
 | **Keys** | Play focused member, or the split/layer; lit in member colour; incoming MIDI notes flash | ✓ | — |
 
-**Build order** (after saving): macros with PART/BAND → A/B compare → hold-GLO mutes → hold-LFO momentary tweaks →
+**Build order** (after saving): macros with PART/BAND ✓ → A/B compare → hold-GLO mutes → hold-LFO momentary tweaks →
 hold-FX performance layer → black-key focus → SCL split → looper. Melodee's pages Dock doesn't need are off the panel
 (docs/design/DOCK_SIMPLIFY.md, done 2026-10-18; SEQ's clock page with it); the common ENV / LFO pages (done
-2026-10-18, below); next the macros.
+2026-10-18, below); the macros (done 2026-10-18, below); next A/B compare.
 
 **ENV and LFO, the same on every engine** (`firmware/src/dock_front.c`). Page 1 of each is a front door: ATK DEC SUS
 REL, and RATE DEPTH, as offsets that nudge the sound's own envelopes and LFOs from where the sound has them (0 = the
@@ -153,17 +153,30 @@ sound as made; 16 steps = twice as long; levels toward the top or toward nothing
 FM6: every operator's EG, its LFO; CZ-1: the DCW and DCA envelopes, its vibrato; EP: DECAY, RELEASE, TREM; organ and
 PLUCK: the ADSR plus the percussion's decay / the string's damping; JUNO, SID: the ADSR; a kit: DECY only. A control
 with no meaning on an engine reads "--" (EP: ATK, SUS; a kit: all but DEC). The engine's own pages follow unchanged.
-The offsets reset when a sound loads and are kept with a saved Line-up; the Shape macro will reuse the same wiring.
+The offsets reset when a sound loads and are kept with a saved Line-up; the Shape macro reuses the same wiring.
 
-Knob meanings per engine:
+**The macros: KNOB 1–4 on HOME** (`firmware/src/dock_macro.c`). Tone, Bite, Shape and Space are offsets from the
+sound as made, the same idea as the common ENV / LFO: the middle is the sound exactly as saved, turning moves it
+either way (to about ±4 octaves of filter, a level to its top or to nothing), and nothing is overwritten: the
+engine's own pages keep the sound's values. **PART** (the header says so) turns the selected member's; tap HOME on
+HOME for **BAND**: one turn moves Bass, Keys and Lead, each from its own value (Space moves the drummer's too); tap
+again for the chord wheel (the knobs still the band's), again for PART. On HOME the cells show the gauge from the
+middle: PART one bar, BAND a line each for Bass, Keys and Lead in their colours. Browsing a sound starts it neutral;
+Undo brings the old sound's back; a saved Line-up keeps them (a factory one: all neutral).
+
+Knob meanings per engine (✓ built; Shape lengthens the times through the common ENV's wiring, "+" longer):
 
 | | Tone | Bite | Shape | Space |
 |---|---|---|---|---|
-| Juno | Cutoff | Resonance / PWM | Attack/Release | Chorus + verb |
-| Prophet | Cutoff | Poly-mod / res | Filter env | Delay + verb |
-| EP | Brightness | Bark | Decay | Trem + verb |
-| Organ | Drawbar mix | Drive | Percussion | Rotary speed + verb |
-| Pluck | Brightness | Pluck position | Decay | Verb |
+| Juno ✓ | Cutoff | Resonance + PWM | Attack + release | Room sends (its chorus is a switch: on its page) |
+| Prophet ✓ | Cutoff | Resonance + poly-mod (half) | Filter env amount, decay + release | Room sends (delay + verb) |
+| EP ✓ | Brightness (TONE) | Bark | Decay (release half) | Trem depth + room sends |
+| Organ ✓ | Drawbars: + the bars above 4' up, − the bars from 8' up down | Drive | Percussion decay | Rotor fast past +32, slow past −32 (a rotary on) + room sends |
+| Pluck ✓ | Brightness | Pluck position | Decay (damping) | Room sends |
+| FM6 ✓ | Brightness (the modulators' index) | The modulators' attack peak and level, feedback | Decay + release | Room sends |
+| CZ-1 ✓ | DCW depth | The DCW envelope's sweep (×4 … ÷4) | Decay + release | Room sends |
+| SID ✓ | Cutoff | Resonance + pulse width | Decay + release | Room sends |
+| Drums ✓ | The kit's TONE | Drive | Decay | Room sends |
 
 ## 7. Performance FX layer (hold FX)
 
@@ -229,7 +242,7 @@ Goal: play Dock on screen with the Circuit plugged in, and tune sounds by ear. N
    - **Device-reality meters:** voices in use per member, and estimated device CPU load per audio block (use the repo's CPU-budget/regression tooling) so nothing sounds great in the browser but chokes on the FM-1.
    - A/B toggle and quick preset save/export to iterate sounds.
 4. Voice reservation + mono/legato for Bass and Lead.
-5. Four macros (Tone/Bite/Shape/Space), PART/BAND modes.
+5. Four macros (Tone/Bite/Shape/Space), PART/BAND modes. (Built: every engine; tuning the ranges by ear to do.)
 6. JUNO engine + chorus → tune against references.
 7. EP engine (Rhodes, Wurly) + tremolo → tune. (Built from FRodhes; tuning by ear to do.)
 8. Bring back lean effects; build the five Line-ups with their rooms. (Built: rooms on Melodee's shared effects, SPRING from Felucca; tuning by ear to do.)

@@ -182,6 +182,13 @@ control. These are feedback and interaction, rather than ongoing state indicator
   of yours, until another Line-up loads or Factory line-up erases yours; the header redraws when it changes. Priority:
   part of HOME's normal context: a message, a layer or recording replaces the whole header (Melodee's) and the mark
   comes back with HOME's. No label: the dot fits both fonts and every Line-up name.
+- **Dock: PART / BAND** (`ui_dock.c` dk_head, 2026-10-18). State: what HOME's knobs (the macros, dock_macro.c) move:
+  the selected member (PART) or the band (BAND); HOME tapped on HOME turns PART → BAND → the chord wheel → PART.
+  Mark: the word after the BPM in `LB`, PART in `MID`, BAND in `TEXT`; always there on HOME (both are states the knobs
+  are in). Lifetime: from the tap until the next; the header redraws on the change. Priority: HOME's normal context,
+  as your Line-up's dot; the Line-up's name gives way first (it drops a size to keep the gap: "BAND Kraut • DOCK").
+  The knob strip agrees with it: the turning cell fills with the member's colour (PART) or `TEXT` (BAND), and BAND's
+  gauges are a line each for Bass, Keys and Lead.
 
 For each new indicator, specify its state, lifetime, priority, and compact label here, and extend the shared
 header renderer instead of choosing a new position in a page. Verify both fonts, crowded headers, persistence,

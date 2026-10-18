@@ -11,10 +11,11 @@
  *   PROPHET  cutoff                   resonance, poly-mod         filter env amount; decay,   the room sends
  *                                                                 release (both envelopes)
  *   EP       TONE (the pickup)        BARK                        decay (and release)         TREM depth, the sends
- *   organ    the drawbars' tilt       drive                       percussion decay            rotor slow / fast, sends
- *            (top up, sub down)                                                               (past ±32; a rotary on)
+ *   organ    the drawbars (+: above   drive                       percussion decay            rotor slow / fast, sends
+ *            4' up; -: 8' and up down)                                                         (past ±32; a rotary on)
  *   PLUCK    brightness               pluck position              decay (DAMP)                the room sends
- *   FM6      brightness (mod index)   feedback                    decay, release              the room sends
+ *   FM6      brightness (mod index)   the modulators' attack      decay, release              the room sends
+ *                                     peak and level, feedback
  *   CZ-1     DCW depth                the DCW envelope's sweep    decay, release              the room sends
  *   SID      cutoff                   resonance, pulse width      decay, release              the room sends
  *   DRUM     TONE                     drive (DRV)                 decay (DECY)                the room sends

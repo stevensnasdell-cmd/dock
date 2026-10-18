@@ -5,6 +5,53 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 ## Unreleased
 
+### The macros: Tone, Bite, Shape, Space (job 3 of 3)
+HOME's four knobs are now Dock's macros on every engine (DOCK.md §6; `firmware/src/dock_macro.c`). Under
+`DOCK_BAND`: with `-DDOCK_BAND=0` HOME's knobs and the sound are Melodee's.
+- **KNOB 1–4 on HOME: Tone, Bite, Shape, Space.** Each is an offset, -64 .. +63, from the sound as made; **the
+  middle is the sound exactly as saved**. Nothing is overwritten: each engine reads its values through the macros
+  where it uses them, so its own pages keep the sound's values and still change it. A detent is 2 steps (the
+  middle to an end in 32).
+- What each moves, by engine: **JUNO** cutoff / resonance and PWM / attack and release / the room sends;
+  **PROPHET** cutoff / resonance and poly-mod (half) / the filter envelope's amount, decay and release / sends;
+  **EP** TONE / BARK / decay (release half) / TREM depth and sends; **organ** the drawbars (+ the bars above 4' up,
+  − the bars from 8' up down) / drive / the percussion's decay / the rotor fast past +32, slow past −32 (a sound
+  with its rotary on) and sends; **PLUCK** brightness / pluck position / decay / sends; **FM6** the modulators'
+  index / their attack peak and level, and the feedback / decay and release / sends; **CZ-1** DCW depth / the DCW
+  envelope's sweep (x4 .. /4) / decay and release / sends; **SID** cutoff / resonance and pulse width / decay and
+  release / sends; a **kit** its TONE / DRV / DECY / sends. Tone moves a filter about ±4 octaves at the ends; a
+  level (resonance, drive, bark, the sends) moves toward its top or toward nothing, as the common ENV's levels.
+- How: Tone and Bite ride the voice's filter and shape modulation (voice.c, `vmod_t` cutoff / shape) on the
+  engines that read them (JUNO, FM6, CZ-1, PLUCK, SID), and the value itself where the others read it (the
+  Prophet's value cache, EP's strike, the organ's block, the kit's lanes). **Shape adds its share to the common ENV
+  offsets** (`fr_off`, job 2's wiring), so it reaches every envelope the ENV page does. **Space** is the part's room
+  sends as heard (fx.c, mix.c).
+- **PART / BAND: tap HOME on HOME** turns PART → BAND → the chord wheel → PART. PART moves the selected member;
+  BAND moves Bass, Keys and Lead, each from its own value (Space moves the drummer's too); on the chord wheel the
+  knobs stay the band's. HOME's header says **PART** (grey) or **BAND** (white) after the BPM (docs/design/README.md,
+  Status indicators); the Line-up's name drops a size when it needs the room ("BAND Kraut • DOCK").
+- **The knob strip:** Tone · Bite · Shape · Space in Title case, each with a gauge from its middle to the offset (a
+  dot at the middle: as made). PART: one bar; BAND: a line each for Bass, Keys and Lead in their colours. The turning
+  cell fills with the member's colour (BAND: white, the whole band). In Melodee Pixel, Shape and Space read Shp, Spc.
+- The macros are the part's: **0 when a sound loads** (PRESETS, a Program Change, a user sound: browsing starts
+  neutral), back with Undo, **kept with a saved Line-up** (`dock_lineup_t.macro`, the record's reserved field, so
+  every saved Line-up loads as it was; the .dock files' `"macros"`, -64 .. 63) and 0 on a factory one.
+- **At the middle nothing changed:** 118 renders (every engine's presets, a sample of each, and the five Line-ups'
+  parts in their rooms) are the same sample for sample as the previous commit's build; the balance and tuning test
+  passes as before.
+- `tests/dock_macro_test.c` (in `tests/dock_tests.sh`), 13 sounds over every engine: each macro moves the sound;
+  Tone + brighter than Tone − (the energy of the signal's changes, e.g. JUNO STR MACHINE −24 / −18 / −13 dB at
+  −40 / 0 / +40, PLUCK UPRIGHT −30 / −19 / −13); Shape + rings longer (JUNO STR MACHINE −15 / 10 / 29 dB; the organ:
+  its percussion's decay); turned and back to the middle, the same render sample for sample; BAND moves all three
+  and the drummer's Space; HOME's tap cycle; saved with a Line-up (the same render back), factory 0, a sound load 0,
+  Undo. `dock_ui_test` turns the knobs in PART and BAND and taps the cycle; `ui_render` gains five HOME scenes (0
+  lint findings over 279 screens); the emulator's self-tests turn macros (`emu/build.sh test`: native == wasm; the
+  panel self-test turns KNOB 1 and hears it). The page's reload test now saves a macro through a real reload.
+- Not done: the ranges want tuning by ear (some Tone moves are subtle: FM6, CZ-1, the organ); EP's Tone and Bite act
+  on the next strike (as its own TONE and BARK); JUNO's chorus is a switch (I, II, I+II) and stays on its page, not on
+  Space; hold LFO + a HOME knob (momentary) does nothing yet (the hold-LFO step); CC 74 / 71 still turn the engine's
+  own cutoff / resonance; Save as user keeps the sound without the macros (as the ENV / LFO offsets).
+
 ### Common ENV and LFO (job 2 of 3)
 ENV and LFO now mean the same thing on every engine (docs/design/DOCK_SIMPLIFY.md: a front door, never a lowest
 common denominator). Under `DOCK_BAND`: with `-DDOCK_BAND=0` Melodee's pages and sound are unchanged.

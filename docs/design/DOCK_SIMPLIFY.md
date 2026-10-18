@@ -53,7 +53,7 @@ neither is Melodee's groovebox heritage and goes (removed from the panel; the co
 | **REC** | (nothing) | **Later** | the looper |
 | **PLAY** | start/stop the internal clock | **Keep** | the arpeggiator and later the looper follow it |
 | **HOME** | Stage (Dock's HOME) | **Keep** | |
-| HOME | tap on HOME: chord wheel | **Keep**, in the cycle PART → BAND → chord wheel | agreed: it's fun |
+| HOME | tap on HOME: chord wheel | **Keep**, in the cycle PART → BAND → chord wheel (done, job 3) | agreed: it's fun |
 | HOME | (hold) the menu | **Keep**, trimmed: see below, and gains a **Band** section | |
 
 ## HOME's menu (hold HOME)

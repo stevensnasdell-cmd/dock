@@ -110,7 +110,7 @@ Rules:
 | **Badge** | 24 × 24, radius 6, member colour (idle: 55 %), its letter in Space Grotesk 700 20 px, `BG`, centred |
 | **Member row** (HOME) | 236 × 30, radius 7, `SURFACE` (picked: 18 % tint). Badge at x 5; name `TX` at x 36; optional chip; meter at x 206 |
 | **Meter** | five bars 3 px wide, 6 apart, heights from the member's level, in its colour; silent: five 3 px dots in `LINE` |
-| **Knob cell** | 57 × 48, radius 8, `SURFACE`. HOME: name `LB` + a 47 × 3 gauge (track `LINE`, fill `TEXT`). Pages: name `LB` in `MID` + value (`VL`, Unbounded). **Turning:** the whole cell fills with the member colour, text in `BG` |
+| **Knob cell** | 57 × 48, radius 8, `SURFACE`. HOME (the macros, an offset from the sound as made): name `LB` + a 48 × 3 gauge (track `LINE`), filled from its middle to the offset in `TEXT` (at the middle: a 2 px dot); BAND: 48 × 6, a 2 px line each for Bass, Keys and Lead in their colours. Pages: name `LB` in `MID` + value (`VL`, Unbounded). **Turning:** the whole cell fills with the member colour (HOME in BAND: `TEXT`, the whole band), text in `BG` |
 | **Picture** | 236 × 124 at y 84, radius 8. One shape: what the turning knob changes. Its line 3 px in the member colour over an 16 % fill; the point now (a note, a velocity) a 8 px `TEXT` dot. Its name `LB` top left in the member colour. **Nothing covers it**: the value lives in the knob cell |
 | **Chip** | 16 px tall, radius 4. On: member colour fill, `BG` text. Off: `SURFACE` with a `LINE` outline, `DIM` text |
 | **Browse strip** (HOME) | 236 × 48 in the knob strip's place while a sound is chosen (PRESETS, a Program Change, an undo) and 2 s after: the engine (`LB`, member colour), the category (`LB`, `MID`), the place among that engine's sounds in the list shown (`MN`, `MID`, "JUNO … 2 / 10"). The row shows the sound; while the browser waits to load it, its name is in `ACCENT` |
@@ -122,7 +122,7 @@ Rules:
 
 | Screen | Header | Knob strip | Picture / rows | Bar |
 |---|---|---|---|---|
-| **HOME** (stage) | clock dot and BPM at the left; the Line-up's name and the DOCK wordmark at the right ("Yacht DOCK"; your saved version: a 6 px `TEXT` dot after the name, "Yacht • DOCK") | Tone · Bite · Shape · Space (PART or BAND) with gauges | four member rows: Bass, Keys, Lead, Drums | VOICES + eight squares |
+| **HOME** (stage) | clock dot and BPM at the left, then PART (`MID`) or BAND (`TEXT`); the Line-up's name and the DOCK wordmark at the right ("Yacht DOCK"; your saved version: a 6 px `TEXT` dot after the name, "Yacht • DOCK") | Tone · Bite · Shape · Space (PART or BAND) with gauges from the middle | four member rows: Bass, Keys, Lead, Drums | VOICES + eight squares |
 | **FOCUS** (a member) | badge + member name, voices `n/6` | the engine's four, values in Unbounded; the turning one filled | what the turning knob shapes | the sound's name + engine |
 | **FX** (FX held) | FX, the sync rate | Depth · Mix · Rate · Gate | who goes through (three chips), then eight effect cells | (none: the cells reach the edge) |
 | **LOOPER** (REC) | REC dot, member badge, mode | the bar counter in Unbounded 48 (no knob strip) | beat strip, then the notes with the playhead | what happens next ("closes on bar 5") |
@@ -160,11 +160,10 @@ Rules:
 
 ## 9. Open
 
-Built so far (firmware, `DOCK_BAND`): the fonts and DOCK palette, HOME (`ui_dock.c`), the pages' header (badge, page,
-voices), badge letters in place of track numerals, knob cells as cards with the turning one filled. Still to do on
+Built so far (firmware, `DOCK_BAND`): the fonts and DOCK palette, HOME (`ui_dock.c`; its macros' strip with PART /
+BAND in the header), the pages' header (badge, page, voices), badge letters in place of track numerals, knob cells as cards with the turning one filled. Still to do on
 the pages: the picture on a `SURFACE` card, and values at 28 px in Unbounded (Melodee's values roll digit by digit at
 20 px; the roll needs reworking for the larger face). FX and LOOPER come with their features.
 
 - The drummer's colour (bone, proposed here) and its name on HOME (the groove's name, e.g. "Laid-back").
-- Whether HOME's knob strip shows PART or BAND with a mark, and how (DOCK.md §6).
 - The Line-up picker and the sound browser (not drawn yet).
