@@ -115,13 +115,14 @@ voice split, with room for macro offsets and a drum groove.
 
 Dock has two jobs, and the panel serves both: **dialling in the right sound** (browse, edit, compare, save) and
 **shaping it live while an external sequencer plays** (macros, mutes, momentary tweaks, performance effects).
-Navigation follows Baud Girl's principles (concept only): **SELECT picks a parameter, ALGORITHM changes it, SEL
-opens, HOME backs out.** Agreed map (2026-10-18); "today" is the firmware as it stands.
+Navigation follows Baud Girl's principles (concept only): **SELECT picks a parameter, ALGORITHM changes it, HOME
+backs out.** The FM-1's knobs **only turn** (no push switch: the firmware reads 14 buttons and 7 knobs), so every
+"press" is a button. Agreed map (2026-10-18); "today" is the firmware as it stands.
 
 | Control | Dock (the plan) | Today | Job |
 |---|---|---|---|
-| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value | the member's four engine settings (CUT, RES, ENV…) | live |
-| **SELECT** | On HOME: turn = change Line-up ✓; press = PART ↔ BAND. On pages: turn the pages | turn = Line-up ✓ | both |
+| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value (tap HOME on HOME to switch) | the member's four engine settings (CUT, RES, ENV…) | live |
+| **SELECT** | On HOME: turn = change Line-up ✓. On pages: turn the pages | turn = Line-up ✓ | both |
 | **ALGORITHM** | Pick the focused member (on pages: change the picked parameter) | picks the member ✓ | both |
 | **Black keys 1–4** (or held button + key) | Jump straight to Bass / Keys / Lead / Drums | play notes | live |
 | **PRESETS** | Browse the focused member's sounds (engine strip, per-engine count) | ✓ | sound |
@@ -136,7 +137,7 @@ opens, HOME backs out.** Agreed map (2026-10-18); "today" is the firmware as it 
 | **SEQ** | Clock / thru status (source, incoming BPM); tempo's new home | nothing | — |
 | **REC** | Arm the looper for the focused member (notes, not audio); hold = clear member | nothing | live |
 | **PLAY** | Start/stop looper + internal clock (ignored when an external clock leads) | internal clock ✓ | live |
-| **HOME** | Stage view; hold = menu (channels, voice split, clock, theme) | ✓ | — |
+| **HOME** | Stage view; **on HOME, tap = cycle PART → BAND → chord wheel** (the knobs shape one member, then the whole band, then Melodee's chord-wheel view, kept because it's fun); hold = menu (channels, voice split, clock, theme) | tap = chord wheel ✓; hold = menu ✓ | both |
 | **OCT− / OCT+** | Octave for focused member; both together = panic | ✓ (elsewhere: back / enter) | — |
 | **MASTER** | Volume | ✓ | — |
 | **Keys** | Play focused member, or the split/layer; lit in member colour; incoming MIDI notes flash | ✓ | — |
