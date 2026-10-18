@@ -828,6 +828,22 @@ static void draw_columns(void)
                         cur_page()->id[c] == G_SLOT ? VAL(c) : T_DIM, -1, ICON_AUTO);
             continue;
         }
+        if (cur_page()->id[c] == G_CLK_IN && cur_page()->scope == SC_GLOBAL) {   /* Dock's CLOCK: the outside tempo */
+            uint32_t in = midi_clock.mode && midi_clock.tempo_valid && fm1_ms - midi_clock.last_ms < 1000u;
+            if (in)
+                fmt_int(val, song.g[G_BPM]);
+            else
+                str_cpy(val, "--", sizeof val);
+            draw_column(c, "IN", val, in ? "BPM" : "", in ? T_ACCENT : T_DIM, -1, ICON_AUTO);
+            continue;
+        }
+#if DOCK_VOICES
+        if (cur_page()->id[c] == G_SPLIT && cur_page()->scope == SC_GLOBAL) {   /* Dock's GLOBAL: B / K / L voices */
+            dock_split_text(val, "/");
+            draw_column(c, "SPLIT", val, "", VAL(c), -1, ICON_AUTO);
+            continue;
+        }
+#endif
         if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
             fmt_int(val, (int32_t)(song.cpu_q8 * 100u / 256u));
             unit = "%";
@@ -838,7 +854,9 @@ static void draw_columns(void)
                 (d->names == N_FX && (*vp == FX_REVERB || *vp == FX_CHORUS))))
                 str_cpy(val, d->names[clamp(*vp, d->min, d->max)], sizeof val);
         }
-        draw_column(c, d->label, val, unit, (cur_page()->scope == SC_CZ1 &&   /* CZ-1: no effect on the tone as it is */
+        draw_column(c, DOCK_BAND && cur_page()->scope == SC_GLOBAL && cur_page()->id[c] == G_ROUTE ? "BKLD" : d->label,
+                    val, unit, (cur_page()->scope == SC_CZ1 &&   /* CZ-1: no effect on the tone as it is; Dock's */
+                                                                 /* member channels: BKLD */
                     !cz_ed_active(cz_patch[song.sel % NTRK].raw, cur_page()->id[c])) ||
                     (cur_page()->scope == SC_P5 && !p5_ed_active(TSEL, cur_page()->id[c])) ||
                     (vp == &TSEL->p[P_LRATE] && TSEL->p[P_LSYNC]) ? T_DIM : VAL(c),   /* LFO 2 SYNC on: RATE does nothing */

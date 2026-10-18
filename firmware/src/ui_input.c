@@ -725,6 +725,8 @@ static void autosave_poll(uint32_t active)
 {
     static uint32_t t0, rx;
     static uint8_t done;
+    if (DOCK_BAND)                                      /* Dock: no project autosave (Line-ups save on hold SAVE) */
+        return;
 #if MELODEE_UART
     uint32_t r = usb.rx_pkts + um.bytes;
 #else
@@ -984,6 +986,14 @@ static void edit_param(uint32_t slot, int32_t steps)
         patgrid_edit(slot, steps);
         return;
     }
+    if (pg->scope == SC_GLOBAL && pg->id[slot] == G_CLK_IN)
+        return;                                         /* (Dock's CLOCK: IN is what comes in) */
+#if DOCK_VOICES
+    if (pg->scope == SC_GLOBAL && pg->id[slot] == G_SPLIT) {
+        dock_split_turn(steps);                         /* Dock's GLOBAL: the next / previous voice split */
+        return;
+    }
+#endif
     if (pg->graph == GR_SONG) {                       /* KNOB 1 the section, 2 the track, 3 its pattern there, 4 the
                                                        * section's repeats (TAKE JAM: REC held) */
         if (slot == 0u) {
@@ -1046,9 +1056,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         if (slot == 3u) {
             select_engine(eng_step(TSEL->eng_req, steps));
         } else if (slot == 2u) {
-            preset_mark(steps > 0);
-        } else if (slot == 0u) {                          /* ALL FAV RECENT, the categories (no wrap) */
+            if (!DOCK_BAND)                               /* (Dock: no favourites) */
+                preset_mark(steps > 0);
+        } else if (slot == 0u) {                          /* ALL FAV RECENT, the categories (no wrap; Dock: no FAV) */
             uint32_t m = (uint32_t)clamp((int32_t)list_mode() + (steps > 0 ? 1 : -1), 0, (int32_t)LM_N - 1);
+            if (DOCK_BAND && m == LM_FAV)
+                m = steps > 0 ? LM_RECENT : LM_ALL;
             if (m != list_mode()) {
                 list_set(m);
                 ui.force = 1;
@@ -1622,8 +1635,9 @@ static void page_tap(uint32_t b)
 {
     uint32_t f;
     if (b == B_EDIT && ui.erase_gesture) return;
-    if (b == B_EDIT && smap.on) {                       /* the map open: EDIT closes it */
-        smap_close();
+    if (b == B_EDIT && smap.on) {                       /* the map open: EDIT closes it (Dock: the section list stays: */
+        if (!DOCK_BAND)                                 /* OCT+ opens a section, OCT- goes back) */
+            smap_close();
         return;
     }
     if (b == B_EDIT && sec_on()) {                      /* an EDIT page of an engine in sections: its map */
@@ -1653,13 +1667,23 @@ static void page_tap(uint32_t b)
         name_rename();                                  /* SAVE > USER / PROJECT: EDIT renames the slot */
         return;
     }
+    if (DOCK_BAND && b == B_SCL)
+        return;                                         /* Dock: SCL does nothing yet (split / layer, later) */
     for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
         if (FAM_BTN[f] == b) {
-            if (DOCK_BAND && f == FAM_SEQ)
-                return;                                 /* Dock: no SEQ pages yet */
             open_family(f);
+            if (DOCK_BAND && f == FAM_EDIT && sec_on())   /* Dock: EDIT opens the section list (KNOB 2 a section, */
+                smap_open();                               /* OCT+ opens it, SELECT its pages, OCT- back) */
             return;
         }
+}
+/* OCT- on a page: back. Dock's EDIT pages: up to the section list; else HOME */
+static void page_back(void)
+{
+    if (DOCK_BAND && sec_on())
+        smap_open();
+    else
+        go_home();
 }
 
 /* messages of things that happened elsewhere (a load, the editor, MIDI in): after this frame's own */
@@ -1772,14 +1796,16 @@ static int fx_rack_enter(void)
     }
     return 1;
 }
-/* OCT- on a slot's page: its rack, on its row; on SHARED: FX's, on its shared row. 0: elsewhere */
+/* OCT- on a slot's page: its rack, on its row; on SHARED: FX's, on its shared row (not on Dock). 0: elsewhere */
 static int fx_rack_back(void)
 {
     const page_t *pg = cur_page();
     uint32_t sh = pg->scope == SC_GLOBAL;
     if (ui.home || pg->fam != FAM_FX || (pg->graph == GR_FXRACK && !sh))
         return 0;
-    if (pg->graph == GR_FXRACK) {
+    if (pg->graph == GR_FXRACK) {                       /* SHARED: FX's rack (Dock: SHARED is where FX lands; */
+        if (DOCK_BAND)                                  /* OCT- goes HOME, as from any page) */
+            return 0;
         fx_rack_row[0] = FX_SLOTS;
         fx_go(page_titled("FX"));
     } else {
@@ -2019,8 +2045,9 @@ static void ui_input(void)
     uint32_t seq = btn_hold(&ui.seq_t0, B_SEQ, now, !ui.menu && !ui.confirm && !motion_page());
     if (seq_long) seq = BT_HOLD;
 #if DOCK_BAND
-    rec = seq = BT_NONE;                                /* Dock: no pattern recording, capture, patterns or step pages
-                                                         * (DOCK.md: SEQ becomes the clock status, REC the looper) */
+    rec = BT_NONE;                                      /* Dock: no pattern recording or capture (REC: the looper, later); */
+    if (seq == BT_HOLD)                                 /* SEQ tapped: the CLOCK page (tempo, source, what comes in); */
+        seq = BT_NONE;                                  /* held: nothing (no patterns) */
 #endif
     uint32_t save = btn_hold(&ui.save_t0, B_SAVE, now, !ui.menu && !ui.confirm);
     uint32_t edit = btn_hold(&ui.edit_t0, B_EDIT, now, !ui.menu && !ui.confirm && !name_on() && !new_on() && !ui.ly);
@@ -2352,14 +2379,14 @@ static void ui_input(void)
     if (list_on() && (oct & 2u)) {                      /* a list page: OCT+ the row's list, OCT- Stage */
         list_enter();
     } else if (list_on() && (oct & 1u)) {
-        go_home();
+        page_back();
     } else if (act_cols() && (oct & 2u)) {              /* action pages: OCT+ does the picked action, */
         act_do();
     } else if (act_cols() && (oct & 1u)) {              /* OCT- drops it, or (none picked) goes HOME */
         if (ui.act)
             ui.act = 0;
         else
-            go_home();
+            page_back();
     } else if (oct_nav() && !ui.layer && (oct & 2u)) {  /* any other page: OCT+ Enter (a slot's sheet, the page's), */
         if (ptc_on())                                   /* PATTERNS' Copy to: there */
             ptc_paste(0);
@@ -2392,7 +2419,7 @@ static void ui_input(void)
             ui_message("QUEUE CLEARED");
             ui.force = 1;
         } else {
-            go_home();
+            page_back();
         }
     }
     song.grid = (uint8_t)keys_mode();                 /* (seq.c: the keys are the grid's) */
@@ -2425,7 +2452,7 @@ static void ui_input(void)
     if (s) step_edit_combo();
     if (s && !ui.home && cur_page()->graph == GR_SCALE_PICKER) {
         scale_picker_step(list_accel(EN_PRESET, s, scale_picker_count(), 0));
-    } else if (s && (ui.home || cur_page()->graph == GR_BROWSE)) {
+    } else if (s && (ui.home || DOCK_BAND || cur_page()->graph == GR_BROWSE)) {   /* (Dock: on every page) */
         /* PRESETS browses the selected part's sounds (all engines, then user presets) on HOME and the
          * PRESETS page only (never the steps); elsewhere (TRACKS too, where one records) a stray turn
          * would throw away the sound being edited */

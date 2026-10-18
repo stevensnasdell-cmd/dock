@@ -31,7 +31,13 @@ static const char *const N_ALLOC[] = {"ROT", "REUSE"};
 static const char *const N_ORDER[] = {"NOTE", "PLAY"};
 static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
+#if DOCK_BAND   /* (Dock: the members, B K L D, on four channels; the card shows "1-4": param_format) */
+static const char *const N_ROUTE[] = {"BKLD 1-4", "SEL", "BKLD 5-8", "BKLD 9-12", "BKLD 13-16"};
+#define ROUTE_CUT 5u                                     /* the compact card's cut ("BKLD ") */
+#else
 static const char *const N_ROUTE[] = {"CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"}; /* Keep saved CH1-4/SEL ids; append ranges. */
+#define ROUTE_CUT 2u
+#endif
 static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const N_DASH[] = {"--"};
 static const char *const N_GO[] = {"--", "GO"};
@@ -426,7 +432,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         if (d->names == N_ROUTE) {
             v = clamp(v, d->min, d->max);
             /* The panel's compact card fits "13-16"; editor/picker names retain the CH prefix. */
-            str_cpy(val, d->names[v] + (v == 1 ? 0 : 2), 6);
+            str_cpy(val, d->names[v] + (v == 1 ? 0 : ROUTE_CUT), 6);
         } else
             str_cpy(val, d->names==N_ENGNAME && v==ENGI_PROPHET ? "P5" : d->names[v < d->min ? d->min : v > d->max ? d->max : v], 6);
         if (d->unit)
@@ -489,7 +495,7 @@ enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS 
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_CZTOOLS, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID,
-       GR_FXRACK }; /* NOTES shares GR_ROLL for steps and recorded events */
+       GR_FXRACK, GR_CLOCK }; /* NOTES shares GR_ROLL for steps and recorded events; GR_CLOCK: Dock's SEQ */
 
 typedef struct {
     const char *title;
@@ -507,6 +513,8 @@ typedef struct {
     {t " POINT", FAM_EDIT, SC_CZ1, GR_NONE, {LCZ_EBASE(l, e) + 16, LCZ_EBASE(l, e) + 17, 0xFF, 0xFF}}
 
 #define G_TRK_RECQ 0xFEu                                 /* a global page's column that is the selected track's P_RECQ */
+#define G_CLK_IN 0xFDu                                   /* Dock's CLOCK: the incoming tempo (shown, not set) */
+#define G_SPLIT 0xFCu                                    /* Dock's GLOBAL: the voice split (voice.c dock_share) */
 static const page_t PAGES[] = {
     /* FX (docs/design README "FX rack"): the track's rack, its three slots (shown while they hold an effect), the
      * shared rack, its three slots. A rack: KNOB 2 the row (fx_rack_row), 1 its effect, 4 its amount, SHARED's 3 ROUTE
@@ -596,7 +604,11 @@ static const page_t PAGES[] = {
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
     {"VOICE 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_SPRD, 0xFF, 0xFF, 0xFF}},
+#if DOCK_VOICES   /* Dock: the band's voices by member, not Melodee's shared budget */
+    {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_A4, G_SPLIT, G_CLOCK, G_TUNE}},
+#else
     {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_A4, G_BUDGET, G_CLOCK, G_TUNE}}, /* device reference/budget; CLK/TUNE kept */
+#endif
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_INFO}},
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
@@ -607,6 +619,9 @@ static const page_t PAGES[] = {
     {"PATTERN", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},
     {"TEMPO", FAM_SEQ, SC_GLOBAL, GR_NONE, {G_BPM, G_SWING, G_TRK_RECQ, 0xFF}},   /* the project's: saved with it; QNT: the
                                                                                   * selected track's (TIMING's, folded in) */
+#if DOCK_BAND   /* Dock's SEQ (docs/design/DOCK_SIMPLIFY.md): the tempo, the clock it follows, what comes in */
+    {"CLOCK", FAM_SEQ, SC_GLOBAL, GR_CLOCK, {G_BPM, G_CLOCK, G_CLK_IN, 0xFF}},
+#endif
     {"MIXER", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 2, 3}},   /* GLO button; LEVEL PAN MUTE */
     {"PATTERNS", FAM_SEQ, SC_GLOBAL, GR_PATGRID, {0xFF, 0xFF, 0xFF, 0xFF}},   /* the 4 x 8 grid: KNOB k track k's (ui_stage.c) */
     {"SONG", FAM_SEQ, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},
@@ -759,6 +774,13 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
     if (pg->scope == SC_STEP || pg->scope == SC_TRK) {
         *valp = 0;
         return 0;
+    }
+    if (id == G_CLK_IN || id == G_SPLIT) {           /* (CLOCK's IN, GLOBAL's SPLIT: drawn by ui_draw.c, turned by */
+        static const param_desc_t CLK_IN = PD("IN", F_INT, 0, 0, 0), SPLIT = PD("SPLIT", F_INT, 0, 0, 0);
+        static int16_t dock_cell;                        /* ui_input.c edit_param; this cell never changes) */
+        dock_cell = 0;
+        *valp = &dock_cell;
+        return id == G_SPLIT ? &SPLIT : &CLK_IN;
     }
     if (id == G_TRK_RECQ) {                          /* (TEMPO's QNT: the selected track's recording quantise) */
         *valp = &TSEL->p[P_RECQ];

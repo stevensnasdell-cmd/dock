@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* Melodee menu (HOME held): COLOR, FONT (the type: RUBIK or PIXEL, ui.c TY_*), HOLD (the layer threshold), LIGHTS (the keys' and buttons'
+/* Melodee menu (HOME held; Dock's rows: MI_ROWS): COLOR, FONT (the type: RUBIK or PIXEL, ui.c TY_*), HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB INPUT (stereo master or four track stems; usb.c ua_tracks_set),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched), HOME SELECT (what SELECT turns on HOME:
@@ -15,13 +15,67 @@ enum { MI_COLOR, MI_FONT, MI_HOLD, MI_LIGHTS,
        MI_USB, MI_USB_INPUT,
 #endif
        MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_PICKER, MI_ACCEL, MI_HOME_SEL, MI_GLO_SEL, MI_SCREEN, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
+#if DOCK_BAND
+       MI_BAND, MI_LU_SAVE, MI_LU_FACTORY, MI_SPLIT, MI_CHANNELS,   /* Dock's Band section (MI_BAND: its heading) */
+#endif
        MI_COUNT };
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "FONT", "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT",
 #endif
                                               "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
-                                              "AUTOSAVE", "PICKER POPUPS", "KNOB ACCEL", "HOME SELECT", "GLO SELECT", "SCREEN OFF", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK"};
+                                              "AUTOSAVE", "PICKER POPUPS", "KNOB ACCEL", "HOME SELECT", "GLO SELECT", "SCREEN OFF", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK",
+#if DOCK_BAND
+                                              "BAND", "SAVE LINE-UP", "FACTORY LINE-UP", "VOICE SPLIT", "CHANNELS",
+#endif
+                                              };
+/* the rows shown, in order (ui.menu_sel: the row's MI_*). Dock (docs/design/DOCK_SIMPLIFY.md): no metronome, count-in,
+ * pattern entry, autosave (it saved projects), HOME / GLO SELECT (SELECT on HOME is the Line-up) or sound designer;
+ * a Band section instead: your Line-up's save and the factory one back (hold SAVE on HOME saves too), the voice split
+ * (voice.c dock_share), the members' MIDI channels (G_ROUTE) */
+static const uint8_t MI_ROWS[] = {MI_COLOR, MI_FONT, MI_HOLD, MI_LIGHTS,
+#if MELODEE_USB_AUDIO
+                                  MI_USB, MI_USB_INPUT,
+#endif
+#if DOCK_BAND
+                                  MI_PICKER, MI_ACCEL, MI_SCREEN, MI_PANEL, MI_ABOUT,
+                                  MI_BAND, MI_LU_SAVE, MI_LU_FACTORY, MI_SPLIT, MI_CHANNELS, MI_BACK};
+#else
+                                  MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_PICKER, MI_ACCEL,
+                                  MI_HOME_SEL, MI_GLO_SEL, MI_SCREEN, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK};
+#endif
+#define MI_SHOWN NELEM(MI_ROWS)
+static int mi_heading(uint32_t id)                     /* a section's name, not a row one picks */
+{
+#if DOCK_BAND
+    return id == MI_BAND;
+#else
+    (void)id;
+    return 0;
+#endif
+}
+static uint32_t mi_row(uint32_t id)                    /* id's place in the rows (not shown: the first) */
+{
+    uint32_t r;
+    for (r = 0; r < MI_SHOWN && MI_ROWS[r] != id; r++)
+        ;
+    return r < MI_SHOWN ? r : 0u;
+}
+static uint32_t mi_step(uint32_t id, int32_t s, int wrap)   /* the row s rows on (headings skipped) */
+{
+    int32_t r = (int32_t)mi_row(id), d = s > 0 ? 1 : -1, n = s > 0 ? s : -s, at = r;
+    while (n--) {
+        do {
+            at += d;
+            if (wrap)
+                at = (at + (int32_t)MI_SHOWN) % (int32_t)MI_SHOWN;
+        } while (at >= 0 && at < (int32_t)MI_SHOWN && mi_heading(MI_ROWS[at]));
+        if (at < 0 || at >= (int32_t)MI_SHOWN)
+            break;
+        r = at;
+    }
+    return MI_ROWS[r];
+}
 #if MELODEE_USB_AUDIO
 /* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
 static const char *const MI_USB_NAME[4] = {"IN+OUT", "IN", "OUT", "OFF"};
@@ -233,6 +287,12 @@ static void draw_menu(void)
                             ua_off_want * 92821u + ua_tracks_want * 324161u +
 #endif
                             song.rec * 65537u + song.sel * 13u +
+#if DOCK_BAND
+                            dock_lineup * 7591u + dock_mine * 3967u + (uint32_t)song.g[G_ROUTE] * 1301u +
+#endif
+#if DOCK_VOICES
+                            (dock_share[0] * 64u + dock_share[1] * 8u + dock_share[2]) * 104729u +
+#endif
                             (ui.menu == 2 ? ui.menu_scroll * 48611u : 0u);
     if (!ui.force && sig == ui.menu_sig) {
         if (head_waiting()) draw_head();
@@ -261,15 +321,20 @@ static void draw_menu(void)
         int32_t top = pass ? MENU_SPLIT : MENU_HEAD;
         cv_begin(240, (uint32_t)(pass ? 240 - MENU_SPLIT : MENU_SPLIT - MENU_HEAD), T_BG);
         cv_oy = -top;                                 /* drawn in screen rows */
-        uint32_t first=ui.menu_sel>=MENU_VISIBLE?ui.menu_sel-MENU_VISIBLE+1u:0u;
-        for (i = first; i < first+MENU_VISIBLE && i<MI_COUNT; i++) {
-            int32_t y = MENU_Y0 + (int32_t)(i-first) * MENU_ROW;
-            int sel = i == ui.menu_sel;
-            const char *value = 0;
+        uint32_t at = mi_row(ui.menu_sel), r, first=at>=MENU_VISIBLE?at-MENU_VISIBLE+1u:0u;
+        for (r = first; r < first+MENU_VISIBLE && r<MI_SHOWN; r++) {
+            int32_t y = MENU_Y0 + (int32_t)(r-first) * MENU_ROW;
+            int sel = r == at;
+            const char *value = 0, *raw = 0;
             char b[24], w[24], v[24];
+            i = MI_ROWS[r];
             if (y + MENU_RH <= top || y >= top + (int32_t)cv_h)
                 continue;
             menu_words(w, MI_NAME[i], sizeof w);
+            if (mi_heading(i)) {                        /* a section's name: small, in the theme, on the row's foot */
+                cv_text_on(12, ty_y(y + MENU_RH - 9, TY_LB), TY_LB, w, T_THEME, T_BG);
+                continue;
+            }
             if (i >= MI_CLICK && i <= MI_ADD)
                 value = i==MI_CLICK?(const char *const[]){"OFF","REC","ON"}[settings_click%3u]:
                   i==MI_CLICK_LEVEL?(const char *const[]){"LOW","MID","HIGH"}[settings_click_level%3u]:
@@ -278,6 +343,36 @@ static void draw_menu(void)
             if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
             if (i == MI_PICKER) value = PREF_BITS & PREF_PICK_OFF ? "OFF" : "ON";
             if (i == MI_FONT) value = TY_PIXEL ? "PIXEL" : "RUBIK";
+#if DOCK_BAND
+            if (i == MI_FONT && !TY_PIXEL) raw = "Space Grotesk";   /* (Dock's type: docs/design/DOCK_STYLE.md) */
+            if (i == MI_LU_SAVE || i == MI_LU_FACTORY) {    /* the Line-up playing; Factory: "Yours" while yours plays */
+                if (i == MI_LU_SAVE) ps_lu_v(b);
+                else ps_lu_mine_v(b);
+                raw = b;
+            }
+#if DOCK_VOICES
+            if (i == MI_SPLIT) {                        /* "B1 K6 L1" */
+                uint32_t k;
+                for (b[0] = 0, k = 0; k < 3u; k++) {
+                    char m[6] = {DOCK_BADGE(k), 0};
+                    fmt_int(m + 1, dock_share[k]);
+                    if (k) str_cpy(b + str_len(b), " ", 2);
+                    str_cpy(b + str_len(b), m, 6);
+                }
+                raw = b;
+            }
+#endif
+            if (i == MI_CHANNELS) {                     /* "B1 K2 L3 D4", or the selected member takes them all */
+                uint32_t k, route = (uint32_t)clamp(song.g[G_ROUTE], 0, 4), ch0 = route > 1u ? (route - 1u) * 4u : 0u;
+                for (b[0] = 0, k = 0; route != 1u && k < NPART; k++) {
+                    char m[6] = {DOCK_BADGE(k), 0};
+                    fmt_int(m + 1, (int32_t)(ch0 + k + 1u));
+                    if (k) str_cpy(b + str_len(b), " ", 2);
+                    str_cpy(b + str_len(b), m, 6);
+                }
+                raw = route == 1u ? "Selected" : b;
+            }
+#endif
             if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
             if (i == MI_HOME_SEL) value = HS_NAME[home_select()];
             if (i == MI_GLO_SEL) value = HS_NAME[glo_select()];
@@ -302,15 +397,17 @@ static void draw_menu(void)
                     cv_rrect(x + 16 * (int32_t)k + 2, y + MENU_RH / 2 - 5, 10, 10, 3, T_TRK(k), bg);
             } else {
                 v[0] = 0;
-                if (value)
+                if (raw)
+                    str_cpy(v, raw, sizeof v);
+                else if (value)
                     menu_words(v, value, sizeof v);
                 row_draw(y, w, v, T_TEXT, sel, 0, i);
             }
         }
         {   /* where the rows are in the list: a bar at the right edge */
-            int32_t th = MENU_VISIBLE * MENU_ROW * (int32_t)MENU_VISIBLE / (int32_t)MI_COUNT;
-            int32_t ty = MENU_Y0 + (MI_COUNT > MENU_VISIBLE ? (MENU_VISIBLE * MENU_ROW - th) * (int32_t)first /
-                                    (int32_t)(MI_COUNT - MENU_VISIBLE) : 0);
+            int32_t th = MENU_VISIBLE * MENU_ROW * (int32_t)MENU_VISIBLE / (int32_t)MI_SHOWN;
+            int32_t ty = MENU_Y0 + (MI_SHOWN > MENU_VISIBLE ? (MENU_VISIBLE * MENU_ROW - th) * (int32_t)first /
+                                    (int32_t)(MI_SHOWN - MENU_VISIBLE) : 0);
             cv_rect(238, MENU_Y0, 2, MENU_VISIBLE * MENU_ROW, T_LINE);
             cv_rect(238, ty, 2, th, T_THEME);
         }
@@ -345,10 +442,14 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
             menu_close();
         return;
     }
+    if (ui.menu == 1 && MI_ROWS[mi_row(ui.menu_sel)] != ui.menu_sel)
+        ui.menu_sel = MI_ROWS[0];                      /* (a row not shown: the first) */
+    if (ui.menu == 1 && mi_heading(ui.menu_sel))
+        ui.menu_sel = (uint8_t)mi_step(ui.menu_sel, 1, 0);   /* (never on a heading) */
     if ((s = panel_enc(EN_K2)) != 0 && ui.menu == 1)  /* KNOB 2 the row (the standard; PRESETS too) */
-        ui.menu_sel = (uint8_t)clamp((int32_t)ui.menu_sel + s, 0, (int32_t)MI_COUNT - 1);
+        ui.menu_sel = (uint8_t)mi_step(ui.menu_sel, s, 0);
     if ((s = panel_enc(EN_PRESET)) != 0 && ui.menu == 1)
-        ui.menu_sel = (uint8_t)((ui.menu_sel + (s > 0 ? 1u : MI_COUNT - 1u)) % MI_COUNT);
+        ui.menu_sel = (uint8_t)mi_step(ui.menu_sel, s > 0 ? 1 : -1, 1);
     else if (s != 0 && ui.menu >= 2) {             /* bounded document scrolling */
         ui.menu_scroll = (uint16_t)clamp((int32_t)ui.menu_scroll + clamp(s, -128, 128) * 18, 0, menu_scroll_max());
     }
@@ -422,6 +523,19 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         glo_select_set(s > 0 ? (v + 1u < HS_N ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % HS_N);
         ui.force = 1; ok = 0;
     }
+#if DOCK_VOICES
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_SPLIT) {      /* KNOB 1 steps, OCT+ steps and wraps */
+        dock_split_turn(s);
+        ui.force = 1; ok = 0;
+    }
+#endif
+#if DOCK_BAND
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_CHANNELS) {   /* CH1-4, SEL, CH5-8 .. (N_ROUTE's order) */
+        int32_t v = clamp(song.g[G_ROUTE], 0, 4);
+        song.g[G_ROUTE] = (int16_t)(s > 0 ? (v < 4 ? v + 1 : 4) : s < 0 ? (v ? v - 1 : 0) : (v + 1) % 5);
+        ui.force = 1; ok = 0;
+    }
+#endif
     if ((s || ok) && ui.menu==1 && ui.menu_sel==MI_SCREEN) {
         uint32_t value=scr_get(), top=4u;
         value=s>0?(value<top?value+1u:value):s<0?(value?value-1u:0u):(value+1u)%(top+1u);
@@ -442,6 +556,16 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         case MI_DESIGNER:
             menu_close();designer_open();
             break;
+#if DOCK_BAND
+        case MI_LU_SAVE:                               /* as hold SAVE on HOME (playing: it stops first) */
+            menu_close();
+            ps_lu_save();
+            break;
+        case MI_LU_FACTORY:                            /* its question (yours goes), or "IS FACTORY" */
+            menu_close();
+            ps_lu_factory();
+            break;
+#endif
         case MI_ABOUT:
             ui.menu = 2;
             ui.menu_scroll = 0;

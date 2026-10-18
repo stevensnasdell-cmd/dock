@@ -180,6 +180,9 @@ static void dk_voices(void)
     for (k = 0; k < 3u; k++) {
         on[k] = dk_sounding(k);
         sig = sig * 31u + on[k];
+#if DOCK_VOICES
+        sig = sig * 7u + dock_share[k];                 /* (the split changed: the menu's Band, GLOBAL) */
+#endif
     }
     if (!ui.force && sig == dk.vox)
         return;
@@ -204,6 +207,44 @@ static void dk_voices(void)
     }
     cv_blit(0, DK_VOX_Y);
 }
+
+#if DOCK_VOICES
+/* the voice split (voice.c dock_share): the band's eight voices as Bass / Keys / Lead, turned through these on the
+ * menu's Band and on GLOBAL (the drummer's lane is its own); a Line-up keeps its split, hold SAVE keeps a new one */
+static const uint8_t DOCK_SPLITS[][3] = {{1, 6, 1}, {2, 5, 1}, {1, 5, 2}, {2, 4, 2}, {3, 4, 1}, {1, 4, 3}};
+#define DOCK_NSPLITS NELEM(DOCK_SPLITS)
+static uint32_t dock_split_at(void)                     /* the split playing, DOCK_NSPLITS if it is none of these */
+{
+    uint32_t i;
+    for (i = 0; i < DOCK_NSPLITS; i++)
+        if (DOCK_SPLITS[i][0] == dock_share[0] && DOCK_SPLITS[i][1] == dock_share[1] && DOCK_SPLITS[i][2] == dock_share[2])
+            return i;
+    return DOCK_NSPLITS;
+}
+static void dock_split_set(uint32_t i)
+{
+    uint32_t k;
+    for (k = 0; k < 3u; k++)
+        dock_share[k] = DOCK_SPLITS[i % DOCK_NSPLITS][k];
+    ui.force = 1;
+}
+static void dock_split_turn(int32_t s)                  /* the next / previous split (no wrap; s 0: the next, wrapping); */
+{                                                       /* the first if it is none of these */
+    uint32_t i = dock_split_at();
+    dock_split_set(i == DOCK_NSPLITS ? 0u : !s ? (i + 1u) % DOCK_NSPLITS :
+                   (uint32_t)clamp((int32_t)i + (s > 0 ? 1 : -1), 0, (int32_t)DOCK_NSPLITS - 1));
+}
+static void dock_split_text(char *b, const char *sep)   /* "1/6/1" (sep "/"), Bass first */
+{
+    uint32_t k;
+    b[0] = 0;
+    for (k = 0; k < 3u; k++) {
+        if (k)
+            str_cpy(b + str_len(b), sep, 4);
+        fmt_int(b + str_len(b), dock_share[k]);
+    }
+}
+#endif
 
 /* a page's header: the member's badge, the page's name, the member's voices sounding of its share; Melodee's header
  * (draw_head) whenever it has something to say */

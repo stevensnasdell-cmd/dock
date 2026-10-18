@@ -750,7 +750,7 @@ static uint32_t graph_sig(int play)
     if (ui.home)
         return h ^ (ui.frame / 2u);                  /* scope: redraw every other frame */
     h ^= (uint32_t)pg->graph * 131u + TSEL->eng_req + song.sel * 7777u + ui.page * 1291u;
-    if (pg->graph == GR_NONE || pg->graph == GR_ARP || pg->graph == GR_MOTION) h ^= ui.frame / 2u;
+    if (pg->graph == GR_NONE || pg->graph == GR_ARP || pg->graph == GR_MOTION || pg->graph == GR_CLOCK) h ^= ui.frame / 2u;
     for (i = 0; i < P_COUNT; i++)
         h = (h ^ (uint32_t)t->p[i]) * 16777619u;
     h ^= (uint32_t)TSEL->preset * 7u + (uint32_t)song.g[G_SLOT] * 13u + TSEL->user * 257u + up_gen * 7919u;
@@ -981,6 +981,23 @@ static void graph_scope(uint16_t c, int32_t top, int32_t h)
 }
 
 /* Each arrangement row selects one bank per track. graph_y, graph_h: the panel's place (ui_pages.c: under its rings) */
+/* Dock's CLOCK (SEQ): the tempo large; under it who sets it (the FM-1, or the clock coming in on USB / TRS) and whether
+ * it runs; a dot on the beat while playing. Copyright (C) 2026 Steven Snasdell */
+static void graph_clock(uint16_t c)
+{
+    static const char *const SRC[3] = {"Internal clock", "Follows USB clock", "Follows TRS clock"};
+    char b[8];
+    uint32_t src = (uint32_t)clamp(song.g[G_CLOCK], 0, 2);
+    int beat = song.playing && beat_pos < seq_beat_samples() / 4u;
+    fmt_int(b, song.g[G_BPM]);
+    cv_text_c(120, ty_y(40, TY_HR), TY_HR, b, c, T_SURF);
+    cv_text_c(120, ty_y(78, TY_TX), TY_TX, SRC[src], T_TEXT, T_SURF);
+    cv_text_c(120, ty_y(104, TY_LB), TY_LB, song.playing ? (midi_clock.mode ? "Playing, led from outside" : "Playing")
+                                                         : src && !midi_clock.mode ? "Waiting for Start" : "Stopped",
+              T_MID, T_SURF);
+    if (beat)
+        cv_disc(214, 20, 10, c, 0);
+}
 static void draw_graph(void)
 {
     const page_t *pg = cur_page();
@@ -1036,6 +1053,10 @@ static void draw_graph(void)
             graph_dxenv(op + FP_R1, op + FP_L1, 0, c);
             break;
         }
+        case GR_CLOCK:                                   /* Dock's SEQ: the tempo large, who leads, the beat */
+            cv_oy = 0;
+            graph_clock(c);
+            break;
         case GR_FMPEG:                                   /* FM6: the pitch envelope */
             graph_dxenv(fm6_patch[song.sel % NTRK] + FP_PR1, fm6_patch[song.sel % NTRK] + FP_PL1, 1, c);
             break;

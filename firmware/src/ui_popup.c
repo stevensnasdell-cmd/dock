@@ -78,9 +78,14 @@ static void ps_save(void)
 static void ps_fav_v(char *b) { str_cpy(b, preset_favorite() ? "On" : "Off", 8); }
 static void ps_fav(void) { preset_mark(!preset_favorite()); }
 static void ps_undo(void) { undo_step(0); }
+#if DOCK_BAND   /* Dock (docs/design/DOCK_SIMPLIFY.md): about this member's sound only (no favourites, no designer) */
+static const sheet_row_t SHEET_SOUND[] = {
+    {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Undo last load", 0, 0, ps_undo, 0}};
+#else
 static const sheet_row_t SHEET_SOUND[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
     {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0}};
+#endif
 /* Stage's: the sound's, then the tracks: the one added (the next), the one removed (the selected: its question) */
 static void ps_trk_v(char *b, uint32_t k, int none)
 {
@@ -107,16 +112,15 @@ static void ps_lu_factory(void)
         confirm_open(CF_DOCK_FACTORY, 0);
 }
 #endif
+#if DOCK_BAND   /* Dock: the band is always four parts; the Line-up's save and factory: the menu's Band (ui_menu.c) */
+#define SHEET_STAGE SHEET_SOUND
+#else
 static const sheet_row_t SHEET_STAGE[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
     {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0},
-#if !DOCK_BAND   /* Dock: the band is always four parts */
     {"Add track", ps_add_v, 0, track_add, 0}, {"Remove track", ps_remove_v, 0, 0, CF_DEL_TRACK},
-#endif
-#if DOCK_SAVE    /* Dock: the Line-up playing (dock_lineups.c): yours kept, or the factory one back */
-    {"Save line-up", ps_lu_v, 0, ps_lu_save, 0}, {"Factory line-up", ps_lu_mine_v, 0, ps_lu_factory, 0},
-#endif
 };
+#endif
 /* the song's (SONG) */
 static int ps_song_free(void)
 {

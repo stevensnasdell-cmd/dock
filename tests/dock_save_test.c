@@ -6,7 +6,7 @@
  *   - hold SAVE on HOME keeps the band (every part's parameters and engine patch, PROPHET, FM6, CZ-1, DRUM; levels,
  *     pans, sends, inserts; the room; the voice split) as yours, marked in the header; SELECT away and back loads it:
  *     every value back, and it renders the same as the record put in place directly (from one state, forked)
- *   - HOME's sheet: Factory line-up asks, then the factory one plays again and yours is gone
+ *   - the menu's Band (hold HOME): Factory line-up asks, then the factory one plays again and yours is gone
  *   - project slot D holds the Line-ups: never loaded, saved or erased as a project
  * Then, with arguments, the parts tests/dock_tests.sh strings together:
  *   reboot NOR BIN   a new power-on from the flash a run left (NOR): yours plays at once, marked, as BIN
@@ -27,6 +27,13 @@ static void scheck(const char *what, int ok)
 static void run_ms(uint32_t ms) { uint32_t e = fm1_ms + ms; while ((int32_t)(fm1_ms - e) < 0) web_render(128); }
 static void push_for(uint32_t label, uint32_t ms) { web_buttons(1u << label); run_ms(ms); web_buttons(0); run_ms(80); }
 static int same(const dock_lineup_t *a, const dock_lineup_t *b) { return !memcmp(a, b, sizeof *a); }
+static int band_row(uint32_t id)                       /* hold HOME (the menu), KNOB 2 to that Band row: 1 there */
+{
+    if (!ui.menu)
+        push_for(B_HOME, 900);
+    for (int i = 0; i < 40 && ui.menu_sel != id; i++) { web_enc(EN_K2, 1); run_ms(30); }
+    return ui.menu && ui.menu_sel == id;
+}
 static void diff(const char *what, const dock_lineup_t *a, const dock_lineup_t *b)   /* (a failure's detail) */
 {
     const uint8_t *x = (const uint8_t *)a, *y = (const uint8_t *)b;
@@ -255,31 +262,26 @@ int main(int argc, char **argv)
         scheck("  project A saves and loads as before", project_save(0) == 0 && project_used(0) && dock_store_get("Yacht") != 0);
     }
 
-    {   /* HOME's sheet: Factory line-up, its question, then the factory Yacht */
+    {   /* the menu's Band (hold HOME): Factory line-up, its question, then the factory Yacht */
         dock_lineup_turn(1); run_ms(50); dock_lineup_turn(-1); run_ms(100);   /* (back on yours) */
-        push_for(B_OCTUP, 900);                            /* OCT+ held: HOME's sheet */
-        int sheet = pop.on == POP_SHEET && pop.rows == SHEET_STAGE;
-        for (int i = 0; i < 9; i++) { web_enc(EN_K2, 1); run_ms(30); }   /* KNOB 2: its last row */
-        int row = sheet && pop.rows[pop.sel].act == ps_lu_factory;
+        int row = band_row(MI_LU_FACTORY);
         push_for(B_OCTUP, 60);                             /* OCT+: the question */
         int asked = ui.confirm == CF_DOCK_FACTORY;
-        if (getenv("DBG")) printf("sheet %d (pop %u) row %d sel %u asked %d confirm %u msg '%s'\n", sheet, pop.on, row, pop.sel, asked, ui.confirm, ui.msg);
+        if (getenv("DBG")) printf("row %d sel %u asked %d confirm %u msg '%s'\n", row, ui.menu_sel, asked, ui.confirm, ui.msg);
         shot("build/host/dock_save_factory_ask.ppm");
         push_for(B_OCTUP, 60);                             /* OCT+: yes */
         run_ms(100);
         dock_lineup_capture(&now, 0);
-        scheck("HOME's sheet: Factory line-up asks first", sheet && row && asked);
+        scheck("the menu's Band: Factory line-up asks first", row && asked);
         scheck("  then Yacht is the factory one again: every value, no mark, yours gone", same(&now, &DOCK_LINEUPS[0]) &&
                !(dock_mine & 1u) && !dock_store_get("Yacht") && dock_share[DOCK_BASS] == DOCK_LINEUPS[0].share[0]);
         if (!same(&now, &DOCK_LINEUPS[0])) diff("factory", &now, &DOCK_LINEUPS[0]);
-        push_for(B_OCTUP, 900); for (int i = 0; i < 9; i++) { web_enc(EN_K2, 1); run_ms(30); } push_for(B_OCTUP, 60);
-        scheck("  asked again with nothing saved: says so, asks nothing", !ui.confirm && !pop.on);
+        band_row(MI_LU_FACTORY); push_for(B_OCTUP, 60);
+        scheck("  asked again with nothing saved: says so, asks nothing", !ui.confirm && !ui.menu);
         undo_depth++; dock_lineup_apply(&mine); undo_depth--;   /* yours back on the flash, for the reboot */
-        push_for(B_OCTUP, 900); for (int i = 0; i < 9; i++) { web_enc(EN_K2, 1); run_ms(30); }
-        web_enc(EN_K2, -1); run_ms(30);                 /* the sheet's Save line-up, one row up */
-        int saverow = pop.rows[pop.sel].act == ps_lu_save;
+        int saverow = band_row(MI_LU_SAVE);
         push_for(B_OCTUP, 60); run_ms(100);
-        scheck("  the sheet's Save line-up keeps it again", saverow && dock_store_get("Yacht") && same(dock_store_get("Yacht"), &mine));
+        scheck("  the Band's Save line-up keeps it again", saverow && dock_store_get("Yacht") && same(dock_store_get("Yacht"), &mine));
         snprintf(path, sizeof path, "%s.nor", out);
         write_file(path, nor, sizeof nor);
     }

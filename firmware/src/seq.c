@@ -775,7 +775,10 @@ static void countin_note(track_t *t,uint32_t note,uint32_t vel)
     if(i<8u){cin_note[tr][i]=note;cin_vel[tr][i]=vel;if(i==cin_n[tr])cin_n[tr]++;}
 }
 static int seq_counting(void) { return cin_left != 0; }
-static int click_wanted(void) { return settings_click == CLICK_ON || (settings_click == CLICK_REC && song.rec); }
+static int click_wanted(void)                          /* (Dock: no metronome until the looper) */
+{
+    return !DOCK_BAND && (settings_click == CLICK_ON || (settings_click == CLICK_REC && song.rec));
+}
 /* Preview has its own bounded lifetime and never enters the recording or MIDI-out paths. */
 static volatile uint8_t audition_request;
 static uint8_t audition_track, audition_count, audition_notes[12], audition_vel[12];
@@ -1174,7 +1177,7 @@ static void events_block(uint32_t n)
     if (transport_req == 1u) {
         if (clock_mode)
             midi_clock_transport(0xFAu, fm1_ms);
-        else if(settings_countin && song.rec && !chain.armed && !chain.running) {
+        else if(!DOCK_BAND && settings_countin && song.rec && !chain.armed && !chain.running) {   /* (Dock: no count-in) */
             seq_stop(); memset(cin_n,0,sizeof cin_n);cin_total=cin_left=settings_countin*4u; cin_pos=0; click_req=2;
         } else seq_start();
         transport_req = 0;

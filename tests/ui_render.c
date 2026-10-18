@@ -480,7 +480,8 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_RACK, S_FX_RACK_SPLIT, S_FX_RACK_PICK, S_FX_RACK_LIST, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3, S_FX_SHARED, S_FX_SHARED_SPLIT, S_FX_SHARED_SHEET, S_FX_TONE_DARK, S_FX_TONE_THIN, S_BOOT_MIGRATION, S_BOOT_UPDATE, S_BOOT_ERROR, S_BOOT_COMPLETE, S_BOOT_WIPE_CONFIRM, S_BOOT_WIPING, S_BOOT_UPDATE_ERROR, S_MAP_DRUM_KIT, S_MAP_DRUM_HIT, S_MAP_DRUM_CATEGORY,
 #if DOCK_SAVE
-       S_DOCK_MINE, S_DOCK_MINE_STRIP, S_DOCK_SHEET_FACTORY, S_DOCK_FACTORY,   /* Dock: your Line-up (dock_lineups.c) */
+       S_DOCK_MINE, S_DOCK_MINE_STRIP, S_DOCK_SHEET_FACTORY, S_DOCK_FACTORY,   /* Dock: your Line-up (dock_lineups.c); */
+       S_DOCK_CLOCK, S_DOCK_CLOCK_EXT, S_DOCK_BAND_SPLIT, S_DOCK_GLOBAL,       /* the CLOCK page, the menu's Band */
 #endif
        S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
@@ -508,7 +509,8 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "stage_long", "stage_3tracks_long", "stage_2tracks_long", "stage_1track_long",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_rack", "fx_rack_split", "fx_rack_pick", "fx_rack_list", "fx_bus1", "fx_bus2", "fx_bus3", "fx_shared", "fx_shared_split", "fx_shared_sheet", "fx_tone_dark", "fx_tone_thin", "boot_migration", "boot_update", "boot_error", "boot_complete", "boot_wipe_confirm", "boot_wiping", "boot_update_error", "map_drum_kit", "map_drum_hit", "map_drum_category",
 #if DOCK_SAVE
-    "dock_mine", "dock_mine_strip", "dock_sheet_factory", "dock_factory",
+    "dock_mine", "dock_mine_strip", "dock_band_factory", "dock_factory",
+    "dock_clock", "dock_clock_ext", "dock_band_split", "dock_global",
 #endif
 };
 
@@ -1119,9 +1121,18 @@ static void setup(int s)
         dock_lineup_turn(1);
         dock_mine |= (uint8_t)(1u << dock_lineup);
         if (s != S_DOCK_MINE_STRIP) dk.lineup_ms = 0;
-        if (s == S_DOCK_SHEET_FACTORY) { page_sheet_open(); pop.sel = (uint8_t)(pop.n - 1u); }
+        if (s == S_DOCK_SHEET_FACTORY) { ui.menu = 1; ui.menu_sel = MI_LU_FACTORY; }   /* (the menu's Band) */
         if (s == S_DOCK_FACTORY) confirm_open(CF_DOCK_FACTORY, 0);
         break;
+    /* SEQ's CLOCK (the FM-1's own; following USB with 124 coming in), the menu's Band on VOICE SPLIT, GLOBAL's SPLIT */
+    case S_DOCK_CLOCK: song.playing = 0; go_title("CLOCK"); break;
+    case S_DOCK_CLOCK_EXT:
+        song.playing = 0; go_title("CLOCK");
+        song.g[G_CLOCK] = 1; midi_clock.selected = 1; midi_clock.mode = 1; midi_clock.tempo_valid = 1;
+        midi_clock.last_ms = fm1_ms; song.g[G_BPM] = 124;
+        break;
+    case S_DOCK_BAND_SPLIT: song.playing = 0; go_home(); ui.menu = 1; ui.menu_sel = MI_SPLIT; break;
+    case S_DOCK_GLOBAL: song.playing = 0; go_title("GLOBAL"); ui.hot_col = 1; ui.hot_t = 40; break;
 #endif
     /* .. MIXER with one, two (track 2 selected, its PAN turned), three (track 3 muted, track 1 armed); PATTERNS and SONG
      * with two; GLO with two (track 2 muted); NEW SONG's roles as they open without a template */
@@ -1497,7 +1508,11 @@ static void sweep_screen_messages(void)
 static void sweep_waiting_headers(const char *out)
 {
     int previous_face = render_pixel;
+#if DOCK_BAND   /* (Dock's panel: TEMPO, SONG, PATTERNS and SCALES are gone; CLOCK, GLOBAL, SYSTEM, the EDIT map instead) */
+    static const int scenes[] = {S_HOME, S_DOCK_CLOCK, S_PRESETS, S_GLOBAL, S_SYSTEM, S_REF_MAP_P5, S_MENU, S_ABOUT};
+#else
     static const int scenes[] = {S_HOME, S_TEMPO, S_PRESETS, S_SONG, S_PATGRID, S_SCALE_PICKER_EDO, S_MENU, S_ABOUT};
+#endif
     static uint16_t screen[240 * 240];
     for (uint32_t face = 0; face < 2u; face++) for (uint32_t p = 0; p < UI_PAL_ENTRIES; p++)
     for (uint32_t s = 0; s < NELEM(scenes); s++) {

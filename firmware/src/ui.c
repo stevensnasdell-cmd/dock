@@ -223,6 +223,11 @@ static uint32_t layer_btn(void);
 /* FM operator pages belonged to DIGITAL (retired): they never appear. SLICES:
  * a SLICE track's (ui_slice.c) */
 static int list_gone(uint32_t i);                        /* ui_list.c: a page in another's list */
+static uint32_t page_titled(const char *t);              /* ui_list.c: the page of that title */
+static int sec_on(void);                                 /* ui_sections.c: an EDIT page in sections */
+static uint32_t sec_of(uint32_t i);
+static uint32_t smap_pages(uint32_t r, uint8_t *pg);
+static void sec_note(void);
 /* ENV / LFO on the engines with envelopes and LFOs of their own (Prophet, FM6, CZ-1: engine_t.ownenv, the track's
  * ADSR and ENV DEST do nothing there): their own pages (FAM_EDIT, by title). ENV: only those; LFO: those first, then
  * the track LFO's pages and MOD (the track LFO modulates any engine through LFO DEST and is the matrix's source) */
@@ -253,6 +258,13 @@ static int native_page(uint32_t i, uint32_t fam)       /* page i: one of fam's n
 
 static int page_visible(uint32_t i)
 {
+#if DOCK_BAND
+    /* Dock (docs/design/DOCK_SIMPLIFY.md): no scales, chord keys or MPC (SCL is split / layer later), no sequencer
+     * (SEQ is the clock page), no projects (Line-ups replace them), no STORE (Save as user does it) */
+    if (PAGES[i].fam == FAM_SCL || (PAGES[i].fam == FAM_SEQ && PAGES[i].graph != GR_CLOCK) ||
+        PAGES[i].graph == GR_SLOTS || PAGES[i].graph == GR_FMSTORE || PAGES[i].scope == SC_P5STORE)
+        return 0;
+#endif
     if (PAGES[i].fam == FAM_FX && PAGES[i].graph != GR_FXRACK)   /* a slot's page (its MIX first): while it holds an
                                                                  * effect (the rack shows it either way) */
         return (PAGES[i].scope == SC_GLOBAL ? song.g : TSEL->p)[PAGES[i].id[0] - 1u] != FX_OFF;
@@ -351,7 +363,7 @@ static void page_entered(void)
         ui.scale_family = (uint8_t)(SCALE_FAMILY[clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u)] + 1u);
         ui.scale_picker_seen = 1;
     }
-    song.seq_mode = !ui.home && pg->fam == FAM_SEQ;
+    song.seq_mode = !ui.home && pg->fam == FAM_SEQ && pg->graph != GR_CLOCK;   /* (Dock's CLOCK: no step entry) */
     ui.entry_open = 0;
     ui.note_pick = 0;
     ui.note_slot = 0;
@@ -497,10 +509,27 @@ static void note_name(char *b, uint32_t n)
     fmt_int(b + str_len(b), (int32_t)(n / 12u) - 1);
 }
 
-/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped) */
+/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped; Dock's EDIT: the pages of
+ * the open EDIT section) */
 static void page_scroll(int32_t dir)
 {
     uint32_t fam = cur_page()->fam, n, i = ui.page;
+#if DOCK_BAND
+    if (sec_on()) {                                     /* Dock's EDIT: the open section's pages only (KNOB 2 on the */
+        uint8_t pg[8];                                  /* section list picks another: ui_sections.c) */
+        uint32_t c;
+        n = smap_pages(sec_of(ui.page), pg);
+        for (c = 0; c < n && pg[c] != ui.page; c++)
+            ;
+        if (n < 2u || c >= n)
+            return;
+        ui.page = pg[(c + (dir > 0 ? 1u : n - 1u)) % n];
+        ui.fam_last[FAM_EDIT] = ui.page;
+        sec_note();
+        page_entered();
+        return;
+    }
+#endif
     for (n = 0; n < NPAGES; n++) {
         i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
         if (PAGES[i].fam == fam && page_visible(i))
@@ -542,7 +571,10 @@ static void open_family(uint32_t fam)
         ui.page = !ui.home && k < n ? pg[(k + 1u) % n]                 /* again: the next one; from elsewhere the */
                   : native_page(ui.fam_last[fam], fam) && fam_has(fam, ui.fam_last[fam]) ? ui.fam_last[fam] : pg[0];
                                                                         /* engine's page last used, else its first */
-    } else if (fam == FAM_FX && (ui.home || ui.page != page_first(FAM_FX))) {
+    } else if (DOCK_BAND && fam == FAM_FX && (ui.home || cur_page()->fam != FAM_FX)) {
+        ui.page = (uint8_t)page_titled("SHARED");     /* Dock's FX: the Line-up's room first (SHARED, its sends), on */
+                                                      /* through the member's own rack and slots, round again */
+    } else if (!DOCK_BAND && fam == FAM_FX && (ui.home || ui.page != page_first(FAM_FX))) {
         ui.page = (uint8_t)page_first(FAM_FX);        /* FX: the track's rack (from its slots and SHARED too); */
     } else if (!ui.home && cur_page()->fam == fam) {   /* same button again: next page (FX: on from its rack) */
         uint32_t n, i = ui.page;

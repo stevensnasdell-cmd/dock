@@ -220,7 +220,7 @@ static struct { uint8_t on, trk, mode, x; uint16_t n; uint32_t t; } brw;   /* th
 static uint32_t list_mode(void)
 {
     uint32_t i;
-    if (favorites.filter)
+    if (favorites.filter && !DOCK_BAND)                 /* (Dock: no favourites; ALL, RECENT, the categories) */
         return LM_FAV;
     if (list_recent)
         return LM_RECENT;

@@ -6,6 +6,9 @@
  * the pages (on across the sections, as ever); the sections as tabs under the header, a section's pages as the
  * header's dots. EDIT pressed on an EDIT page: the map, a row a section, a tile a page (KNOB 1 or SELECT a page of
  * the section, KNOB 2 the section, OCT+ opens, OCT- or EDIT closes).
+ * Dock (docs/design/DOCK_SIMPLIFY.md), one way round: EDIT opens the map (the section list); KNOB 2 a section, OCT+
+ * opens it, SELECT turns its pages only, OCT- back up to the list, OCT- there HOME; PRESETS browses the sounds (no
+ * section jumps); EDIT on the list keeps it. Copyright (C) 2026 Steven Snasdell (the Dock changes).
  * Included by ui_draw.c */
 #define SEC_MAX 16
 #define SEC_TAB_H 26                                    /* the tabs: rows 30 .. 55 (a pill 24 tall at 31) */
@@ -239,6 +242,8 @@ static void smap_input(int32_t pages, int32_t categories, uint32_t oct)
         smap.col = (uint8_t)(n ? n - 1u : 0u);
     if (oct & 1u) {
         smap_close();
+        if (DOCK_BAND)                                  /* (Dock: the list is EDIT's top: back is HOME) */
+            go_home();
     } else if ((oct & 2u) && n) {
         if (sec.op[smap.row])
             fm6_opsel = (uint8_t)(sec.op[smap.row] - 1u);

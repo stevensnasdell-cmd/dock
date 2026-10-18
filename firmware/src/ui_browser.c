@@ -105,7 +105,8 @@ static void browser_list(uint32_t cur, uint32_t total)
                     cv_free_text(12, ty_y(y + 18, ty_fit(tf, nm[0] ? nm : tag, 196)), ty_fit(tf, nm[0] ? nm : tag, 196),
                                  nm[0] ? nm : tag, out ? T_MID : T_TEXT, bg, 196);
                     cv_text_on(12, ty_y(y + 42, lf), lf, ENGINES[eng_idx(e)]->name, out ? T_MID : hc, bg);
-                    cv_icon_mid(212, y + 42, 16, fav ? ICON_X_STAR : ICON_X_STAR_O, fav ? hc : T_DIM, bg);
+                    if (!DOCK_BAND)                     /* (Dock: no favourites) */
+                        cv_icon_mid(212, y + 42, 16, fav ? ICON_X_STAR : ICON_X_STAR_O, fav ? hc : T_DIM, bg);
                     continue;
                 }
                 cv_free_text(12, ty_y(y + BR_ROW / 2 - 1, ty_fit(tf, nm[0] ? nm : tag, 220)), ty_fit(tf, nm[0] ? nm : tag, 220),

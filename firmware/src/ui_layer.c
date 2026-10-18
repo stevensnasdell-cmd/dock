@@ -59,7 +59,8 @@ static uint32_t layer_bits(void)
 {
     uint32_t l, m = 0;
     for (l = LAYER_GLO; l < LAYER_N; l++)
-        m |= ly_bit(l);
+        if (!DOCK_BAND || l != LAYER_SCL)              /* (Dock: no scale layer; SCL is split / layer later) */
+            m |= ly_bit(l);
     if (step_modifier_context())
         m &= ~step_modifier_mask();                      /* synth STEP: SCL, EDIT edit notes */
     return m;
@@ -196,7 +197,7 @@ static void layer_tap(uint32_t l)
     memcpy(lys.nv.fam,ui.fam_last,sizeof ui.fam_last);
     uint8_t m = ui.msg_t;
     page_tap(LAYERS[l].btn);
-    if (!((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu) {
+    if (!DOCK_BAND && !((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu) {
         ui_say("HOLD [", KC[LY_KC[l]].label);
         str_cpy(ui.msg + str_len(ui.msg), "] QUICK", sizeof ui.msg - str_len(ui.msg));
         ui.msg_t = 90;                                  /* ~1.5 s */
@@ -390,12 +391,17 @@ static void layer_scl(void)                             /* KNOB 2's scales as a 
         cv_free_text(18, ty_y(y + 14, f), f, t, i == sc ? ink : T_SEC, i == sc ? fill : T_SURF, 200);
     }
 }
-/* GLO held (docs/design: mock/r6_pages GLO): the keys as a keyboard: the black keys MUTE 1..4 (muted: red), the white
- * keys SOLO 1..4 (held: the track's colour), C unmutes all, the high F taps the tempo (an outside clock: dim) */
+/* GLO held (docs/design: mock/r6_pages GLO): the keys as a keyboard: the black keys MUTE 1..4 (Dock: B K L D; muted:
+ * red), the white keys SOLO 1..4 (held: the track's colour), C unmutes all, the high F taps the tempo (an outside clock: dim) */
 static void layer_glo_keys(int32_t h)
 {
+#if DOCK_BAND                                           /* (Dock: the members' letters) */
+    static const char *const WL[8][2] = {{"Solo", "B"}, {"Solo", "K"}, {"Solo", "L"}, {"Solo", "D"}, {"Mute", "all"},
+                                         {"", ""}, {"", ""}, {"Tap", "bpm"}};
+#else
     static const char *const WL[8][2] = {{"Solo", "1"}, {"Solo", "2"}, {"Solo", "3"}, {"Solo", "4"}, {"Mute", "all"},
                                          {"", ""}, {"", ""}, {"Tap", "bpm"}};
+#endif
     static const uint8_t BX[NTRK] = {0, 1, 2, 4};       /* black key t: between white BX and BX + 1 (F# G# A# C#) */
     const int32_t kw = 28, x0 = 1, wy = 50, by = 6, bh = 40;
     uint32_t i;
@@ -414,7 +420,7 @@ static void layer_glo_keys(int32_t h)
         int32_t x = x0 + (int32_t)(BX[i] + 1u) * (kw + 1) - 14;
         int m = trk[i].p[P_MUTE] != 0;
         uint16_t f = m ? T_REC : T_LIFT;
-        char n[2] = {(char)('1' + i), 0};
+        char n[2] = {DOCK_BADGE(i), 0};                 /* (Dock: B K L D; Melodee: 1 .. 4) */
         if (i >= trk_n()) {                             /* (a track not in use: its key blank) */
             cv_rrect(x, by, 26, bh, 4, ux_mix(T_PANEL, T_SURF, 50), T_PANEL);
             continue;
@@ -437,8 +443,16 @@ static void layer_cards(uint32_t l)
                 continue;
             }
             param_format(&TP[P_LEVEL], trk[c].p[P_LEVEL], val, &unit);
+#if DOCK_BAND                                           /* (Dock: the member's letter, B K L D) */
+            {
+                char lb[2] = {DOCK_BADGE(c), 0};       /* (its level: "B LEVEL" is wider than a card) */
+                draw_column(c, lb, val, unit, glo_sounding(c) ? VAL(c) : T_DIM, RATIO(&TP[P_LEVEL], trk[c].p[P_LEVEL]),
+                            ICON_NONE);
+            }
+#else
             draw_column(c, "LEVEL", val, unit, glo_sounding(c) ? VAL(c) : T_DIM, RATIO(&TP[P_LEVEL], trk[c].p[P_LEVEL]),
                         trk_icon(c, 1));
+#endif
         }
     } else {                                            /* the page's four (SCL: LY_SCL) */
         uint8_t h = ui.home, pg = ui.page;
