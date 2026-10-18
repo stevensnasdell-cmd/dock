@@ -231,24 +231,25 @@ reference screens at 240 × 240). Summary:
 
 ## 10. Phases
 
-### Phase 1 — Browser emulator: get the feel and sounds right  ← START HERE
+### Phase 1 — Browser emulator: get the feel and sounds right  ← WE ARE HERE
 Goal: play Dock on screen with the Circuit plugged in, and tune sounds by ear. No hardware.
+Status as of 2026-10-18 (✓ built · ◐ partly · ○ not yet):
 
-1. Clone Melodee; build a WASM version of its host simulator with the firmware DSP **unchanged** (prove it with the golden render hashes); confirm it plays from the Circuit over Web MIDI in Chrome.
-2. Strip to three members (B/K/L), set default channels 1/2/3, hide sequencer pages.
-3. Emulator page:
-   - FM-1 panel on screen (mouse + computer keyboard), screen rendered at real resolution and scaled.
-   - Web MIDI input select (Circuit), MIDI activity per member.
-   - **Device-reality meters:** voices in use per member, and estimated device CPU load per audio block (use the repo's CPU-budget/regression tooling) so nothing sounds great in the browser but chokes on the FM-1.
-   - A/B toggle and quick preset save/export to iterate sounds.
-4. Voice reservation + mono/legato for Bass and Lead.
-5. Four macros (Tone/Bite/Shape/Space), PART/BAND modes. (Built: every engine; tuning the ranges by ear to do.)
-6. JUNO engine + chorus → tune against references.
-7. EP engine (Rhodes, Wurly) + tremolo → tune. (Built from FRodhes; tuning by ear to do.)
-8. Bring back lean effects; build the five Line-ups with their rooms. (Built: rooms on Melodee's shared effects, SPRING from Felucca; tuning by ear to do.)
-9. New UI to the design language; Baud Girl-style navigation.
-10. FX layer, then looper (BARS → CAPTURE → FREE).
-11. The drummer: kits and grooves per Dock, fills, variation, channel-10 step-aside.
+1. ✓ The firmware DSP in WebAssembly, identical to a native build, played from the Circuit over Web MIDI in Chrome.
+2. ✓ The band: Bass, Keys, Lead and the drummer on channels 1–4; the sequencer hidden.
+3. ◐ Emulator: ✓ the on-screen FM-1 (Felucca's page), real 240 × 240 screen, Web MIDI, member meters and voice squares,
+   saves that survive a reload, Export Line-up. ○ Device CPU estimate, ○ A/B compare.
+4. ✓ Voice reservation per member (Bass 1 / Keys 6 / Lead 1, drums in their own lane); Bass and Lead strike every note,
+   last-note priority, glide only on ties.
+5. ✓ Macros Tone / Bite / Shape / Space on every engine; PART / BAND (tap HOME). ○ Ranges tuned by ear.
+6. ✓ JUNO engine + chorus I / II / I+II. ○ Tuned against references by ear.
+7. ✓ EP engine (FRodhes' modelled Rhodes, Wurly), plus WHEEL organ and PHYS pluck brought back. ○ Tuned by ear.
+8. ✓ Rooms (Melodee's shared effects, SPRING from Felucca) and five Line-ups (Yacht, French, Hot, Mod, Goth), balanced
+   and in tune by test; save your own, back to factory, export → factory. ◐ Sounds being chosen by ear.
+9. ✓ Dock's UI: style guide, fonts, palette, HOME, page headers; the panel simplified (docs/design/DOCK_SIMPLIFY.md);
+   common ENV / LFO front pages on every engine. ○ Remaining Melodee page layouts restyled.
+10. ○ FX performance layer, then looper (BARS → CAPTURE → FREE).
+11. ○ The drummer: kits and grooves per Dock, fills, variation, channel-10 step-aside.
 
 Exit criteria: you'd happily jam on it for an hour with the Circuit; all five Docks sound right; CPU estimate stays under budget with Keys playing 6-note chords.
 
@@ -275,13 +276,15 @@ Exit criteria: you'd happily jam on it for an hour with the Circuit; all five Do
 
 ## 12. Open questions
 
-- Cut FM6? (Leaning yes.)
-- Name settled: **Dock**, tagline **"Onboard a band."**
+- Cut FM6? (Leaning yes; it is the agreed first cut if flash or CPU runs short.)
+- **Does it fit the FM-1?** Flash size and CPU are unmeasured until the JieLi toolchain build (Phase 2). Dock added
+  JUNO, the EP's tables, WHEEL, PHYS and the rooms; Melodee was already near the 572 KiB app area.
 - Drummer: which button opens the Drummer page; a few one-shot samples or pure synthesis?
 - Exact voice split defaults per Line-up.
-- Undo gesture (SAVE-held is taken by "save Line-up"; back to a factory Line-up is a row of HOME's sheet).
-- Split/layer UI details.
-- Exact FM-1 screen resolution for the emulator.
+- Split/layer UI details (SCL).
+- Program Change: built (bank × 128 + program per member) but parked; its numbers count the whole list, not the
+  browse strip's per-engine count.
+- Settled: name **Dock**, tagline **"Onboard a band."**; screen 240 × 240; undo = hold EDIT; Kraut renamed **French**.
 
 ## 13. Key links
 
