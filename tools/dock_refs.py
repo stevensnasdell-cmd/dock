@@ -94,10 +94,10 @@ def header(s, title, right, right_c=TEXT):
 
 def home():
     s = Screen("home")
-    w = s.text((8, 22), "DOCK", WORD, TEXT)
-    s.text((8 + w + 8, 22), "Yacht", TX, MID, w=80)
-    s.d.ellipse((168, 11, 176, 19), fill=TEXT)          # clock: external (filled), internal (ring)
-    s.text((232, 22), "112", MONOB, TEXT, anchor="rs")
+    s.d.ellipse((8, 11, 16, 19), fill=TEXT)             # clock: external (filled), internal (ring); tempo at the left
+    s.text((22, 22), "112", MONOB, TEXT)
+    w = s.text((232, 22), "DOCK", WORD, TEXT, anchor="rs")   # the Line-up and DOCK at the right: "Yacht DOCK"
+    s.text((232 - w - 8, 22), "Yacht", TX, MID, w=96, anchor="rs")
     # the four knobs, always the same four
     for k, (lab, v) in enumerate([("Tone", .62), ("Bite", .35), ("Shape", .48), ("Space", .70)]):
         x = 2 + 60 * k

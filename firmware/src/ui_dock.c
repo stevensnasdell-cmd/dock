@@ -68,10 +68,15 @@ static void dk_head(void)
     dk.head = sig;
     ui.head_sig = 0;                                    /* (Melodee's header draws itself whole when it comes back) */
     cv_begin(240, H_HEAD, T_BG);
-    x = cv_text_on(8, ty_y(H_HEAD / 2, TY_WM), TY_WM, "DOCK", T_TEXT, T_BG);
-    cv_free_text(x + 8, ty_y(H_HEAD / 2, TY_TX), TY_TX, DOCK_LINEUPS[dock_lineup].name, T_MID, T_BG, 80);
-    cv_disc(172, H_HEAD / 2, 8, T_TEXT, !ext);
-    cv_text_on(232 - text_w(TY_MB, b), ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG);
+    cv_disc(12, H_HEAD / 2, 8, T_TEXT, !ext);           /* the clock and the tempo at the left */
+    cv_text_on(22, ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG);
+    x = 232 - text_w(TY_WM, "DOCK");                    /* the Line-up's name and DOCK at the right: "Yacht DOCK" */
+    cv_text_on(x, ty_y(H_HEAD / 2, TY_WM), TY_WM, "DOCK", T_TEXT, T_BG);
+    {
+        const char *nm = DOCK_LINEUPS[dock_lineup].name;
+        int32_t w = text_w(TY_TX, nm) < 96 ? text_w(TY_TX, nm) : 96;
+        cv_free_text(x - 8 - w, ty_y(H_HEAD / 2, TY_TX), TY_TX, nm, T_MID, T_BG, 96);
+    }
     cv_blit(0, Y_HEAD);
 }
 

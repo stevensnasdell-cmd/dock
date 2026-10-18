@@ -122,7 +122,7 @@ Rules:
 
 | Screen | Header | Knob strip | Picture / rows | Bar |
 |---|---|---|---|---|
-| **HOME** (stage) | DOCK wordmark, Line-up name, clock dot, BPM | Tone · Bite · Shape · Space (PART or BAND) with gauges | four member rows: Bass, Keys, Lead, Drums | VOICES + eight squares |
+| **HOME** (stage) | clock dot and BPM at the left; the Line-up's name and the DOCK wordmark at the right ("Yacht DOCK") | Tone · Bite · Shape · Space (PART or BAND) with gauges | four member rows: Bass, Keys, Lead, Drums | VOICES + eight squares |
 | **FOCUS** (a member) | badge + member name, voices `n/6` | the engine's four, values in Unbounded; the turning one filled | what the turning knob shapes | the sound's name + engine |
 | **FX** (FX held) | FX, the sync rate | Depth · Mix · Rate · Gate | who goes through (three chips), then eight effect cells | (none: the cells reach the edge) |
 | **LOOPER** (REC) | REC dot, member badge, mode | the bar counter in Unbounded 48 (no knob strip) | beat strip, then the notes with the playhead | what happens next ("closes on bar 5") |
