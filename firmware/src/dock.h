@@ -19,6 +19,13 @@
 #define DOCK_SPRING DOCK_BAND     /* the effects' SPRING (fx.c, after Felucca's), appended as type 10: Hot's room */
 #endif
 
+#ifndef DOCK_SAVE
+#define DOCK_SAVE DOCK_BAND       /* your Line-ups (dock_lineups.c): kept in the flash of Melodee's project slot D
+                                   * (DOCK_LU_SLOT, its A/B object OBJ_BANK0 + 3), which projects then leave alone */
+#endif
+#define DOCK_LU_SLOT 3u           /* the project slot whose flash keeps them (D) */
+#define DOCK_LU_PROJ(slot) (DOCK_SAVE && ((slot) & 3u) == DOCK_LU_SLOT)
+
 /* the parts, in order: MIDI channels 1..4 by default (G_ROUTE CH1-4) */
 enum { DOCK_BASS, DOCK_KEYS, DOCK_LEAD, DOCK_DRUMS };
 

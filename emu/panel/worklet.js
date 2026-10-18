@@ -5,10 +5,11 @@
 // between quanta the page's input goes in and, about 30 times a second (4 when the page is hidden), the screen,
 // the lights and any changed flash go out. After X0X's web/emu/worklet.js (charlesvestal/fm1-x0x, GPL-3.0).
 
-// The flash the page keeps: storage.c's areas (projects, user presets and their FM6 patches, the user sample
-// slots 0x97000..0xDFFFF; the autosave 0xE5000..0xE6FFF (1.2) and FM6's voice bank 0xE7000 (1.4.1); the settings and
-// the second FM6 copy 0xFC000..0xFFFFF), only the sectors that hold something (an erased sector is all 0xFF). {offset: bytes}
-export const STORE_AREAS = [[0x97000, 0xE0000], [0xE5000, 0xE8000], [0xFC000, 0x100000]];
+// The flash the page keeps: Melodee's store as its flash driver allows writing it (hal/fm1_flash.h FL_STORE_OK,
+// storage.c's map): the Prophet banks, projects (Dock: slot D holds your Line-ups), CZ banks, user presets
+// 0x93000..0xDFFFF; the user preset and project extensions 0xE5000..0xFAFFF; the settings and FM6's second copy
+// 0xFC000..0xFEFFF. Only the sectors that hold something (an erased sector is all 0xFF). {offset: bytes}
+export const STORE_AREAS = [[0x93000, 0xE0000], [0xE5000, 0xFB000], [0xFC000, 0xFF000]];
 export function storeSectors(nor) {
   const out = {};
   for (const [a, b] of STORE_AREAS)
@@ -24,6 +25,20 @@ export function restoreSectors(nor, sectors) {
     if (STORE_AREAS.some(([a, e]) => off >= a && off + 4096 <= e && off % 4096 === 0) && b.length === 4096)
       nor.set(b, off);
   }
+}
+
+// "Export Line-up": the band as it plays now as a Line-up file (emu/dock_export.c) -> {name: "yacht.dock", text}
+export function exportLineup(ex) {
+  const n = ex.web_lineup_export(), mem = new Uint8Array(ex.memory.buffer);
+  const str = (p, len) => {                           // (ASCII; an AudioWorklet has no TextDecoder)
+    let s = "";
+    for (let i = 0; i < len; i += 4096) s += String.fromCharCode.apply(null, mem.subarray(p + i, p + Math.min(len, i + 4096)));
+    return s;
+  };
+  const np = ex.web_lineup_name();
+  let e = np;
+  while (mem[e]) e++;
+  return { name: str(np, e - np), text: str(ex.web_lineup_text(), n) };
 }
 
 export const HOLD_MS = 24;
@@ -96,6 +111,7 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "master") ex.web_master(m.value | 0);
       else if (m.type === "midi") ex.web_midi(m.data[0] | 0, m.data[1] | 0, m.data[2] | 0);
       else if (m.type === "visible") this.period = m.on ? 1 / 30 : 1 / 4;
+      else if (m.type === "export") this.port.postMessage({ type: "lineup", ...exportLineup(ex) });
     }
 
     publish() {

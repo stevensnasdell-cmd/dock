@@ -978,6 +978,14 @@ static void confirm_text(char *a, char *b)
         a[8] = (char)('1' + ui.pat_dlg % NPAT);
         str_cpy(b, "Again: delete \xB7 other: copy", 32);
         break;
+#if DOCK_SAVE
+    case CF_DOCK_FACTORY:                               /* HOME's sheet (dock_lineups.c): yours goes */
+        str_cpy(a, "BACK TO FACTORY?", 24);
+        str_cpy(b, "Your saved ", 32);
+        str_cpy(b + str_len(b), DOCK_LINEUPS[dock_lineup].name, DOCK_NAME + 1u);
+        str_cpy(b + str_len(b), " goes", 6);
+        break;
+#endif
     case CF_DEL_TRACK:                                  /* Stage's sheet: the tracks after it move down a place */
         str_cpy(a, "REMOVE TRACK 1?", 24);
         a[13] = (char)('1' + k % NTRK);

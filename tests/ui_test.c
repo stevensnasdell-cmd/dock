@@ -87,7 +87,9 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
         for (i = 0; i < w && x + i < 240u; i++) host_screen[(y + j) * 240u + x + i] = p[j * w + i];
 }
 static struct { uint32_t stage; } melodee_dbg;
-#define MELODEE_FLASH 0
+#ifndef MELODEE_FLASH
+#define MELODEE_FLASH 0                           /* (1: the includer's NOR, UI_TEST_FLASH_HOOKS: emu/dock_web.c) */
+#endif
 #ifndef MELODEE_VERSION
 #define MELODEE_VERSION "TEST"
 #endif
@@ -101,6 +103,10 @@ static struct { uint32_t stage; } melodee_dbg;
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
 #include "../firmware/src/ui_layer.c"
+#if MELODEE_FLASH
+#include UI_TEST_FLASH_HOOKS                      /* st_read, st_erase, st_prog, flash_ok .. (emu/dock_flash.c) */
+#include "../firmware/src/storage.c"
+#endif
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
 #include "../firmware/src/fm6_store.c"
@@ -169,8 +175,7 @@ static void ui_power_on(void)
         pat_last[i] = 0;
     }
 #if DOCK_BAND
-    dock_lineup = 0;
-    dock_room_load(0);                                  /* (as main.c melodee_init: Yacht's room) */
+    dock_lineup_load(0);                                /* (as main.c melodee_init: Yacht, its room) */
 #endif
     undo_depth--;
     song.sel = 0;

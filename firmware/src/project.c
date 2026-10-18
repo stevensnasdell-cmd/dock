@@ -465,10 +465,25 @@ static void proj_bound(project_t *q)
 
 /* FNV of each slot's stored bytes, as last written or read (0: unknown): autosave writes only what differs */
 static uint32_t proj_saved_hash[4];
+/* Dock (DOCK_SAVE): slot D's flash keeps your Line-ups (dock_store.c): never read or written as a project; 1 = it is
+ * that slot (said so) */
+static int proj_dock_slot(uint32_t slot)
+{
+    if (!DOCK_LU_PROJ(slot))
+        return 0;
+    ui_message("D HOLDS LINE-UPS");
+    return 1;
+}
 static int proj_read_slot(uint32_t slot)
 {
     int n = -1;
     slot &= 3u;
+    if (DOCK_LU_PROJ(slot)) {
+        proj_meta[slot].used = 0;
+        proj_meta[slot].name[0] = 0;
+        proj_saved_hash[slot] = 0;
+        return 0;
+    }
     proj_wire_gen++;
 #if MELODEE_FLASH
     if (flash_ok) {
@@ -500,6 +515,7 @@ static void proj_fetch(uint32_t slot) { (void)proj_read_slot(slot); }
 static int proj_write_slot(uint32_t slot, const uint8_t *raw, uint32_t len)
 {
     slot &= 3u;
+    if (DOCK_LU_PROJ(slot)) return 2;
 #if MELODEE_FLASH
     if (!flash_ok || st_save(OBJ_BANK0 + slot, raw, len)) return 2;
 #endif
@@ -561,6 +577,8 @@ static void project_capture(project_t *p)
 static int project_save_as(uint32_t slot, const char *name)
 {
     project_t *p = &proj_scratch;
+    if (proj_dock_slot(slot))
+        return 1;
     if (transport_busy()) {                            /* a flash erase silences the audio and stalls the */
         ui_message("STOP TO SAVE");                     /* sequencer (storage_hw.c): only while stopped */
         return 1;
@@ -626,11 +644,12 @@ static void project_autosave(void)
 static void project_cur_name(char *b) { str_cpy(b, proj_name, PROJ_NAME_LEN + 1u); }   /* b: 13 bytes */
 
 /* slot's name -> b (PROJ_NAME_LEN + 1 bytes); 0 = an empty slot (b ""). Uses proj_scratch */
-static int project_old(uint32_t slot) { return !project_used(slot) && proj_meta[slot & 3u].old; }
+static int project_old(uint32_t slot) { return DOCK_LU_PROJ(slot) || (!project_used(slot) && proj_meta[slot & 3u].old); }
 /* the slot's name ("" none): 1 a project, 0 empty; an old record's: OLD FORMAT (1: the slot is taken) */
 static int project_name(uint32_t slot, char *b)
 {
     b[0] = 0;
+    if (DOCK_LU_PROJ(slot)) { str_cpy(b, "LINE-UPS", PROJ_NAME_LEN + 1u); return 1; }   /* (Dock's: dock_store.c) */
     if (project_old(slot)) { str_cpy(b, "OLD FORMAT", PROJ_NAME_LEN + 1u); return 1; }
     if (!project_used(slot)) return 0;
     str_cpy(b, proj_meta[slot & 3u].name, PROJ_NAME_LEN + 1u);
@@ -643,6 +662,8 @@ static int project_name(uint32_t slot, char *b)
 static int project_rename(uint32_t slot, const char *name)
 {
     project_t *p = &proj_scratch;
+    if (proj_dock_slot(slot))
+        return 1;
     if (transport_busy()) {
         ui_message("STOP TO SAVE");
         return 1;
@@ -673,6 +694,8 @@ static int project_rename(uint32_t slot, const char *name)
 /* slot -> empty (PROJECT's Erase, after its question): an empty record, read as no project; 0 done */
 static int project_erase(uint32_t slot)
 {
+    if (proj_dock_slot(slot))
+        return 1;
     if (transport_busy()) {
         ui_message("STOP TO SAVE");
         return 1;
@@ -781,6 +804,8 @@ static int project_restore_runtime(const project_t *input)
 }
 static void project_load(uint32_t slot)
 {
+    if (proj_dock_slot(slot))
+        return;
     int n = proj_read_slot(slot);
     if (!n) { ui_message(project_old(slot) ? "OLD FORMAT" : "EMPTY SLOT"); return; }
     if (!project_restore_runtime(&proj_scratch)) {
@@ -1071,8 +1096,7 @@ static void project_new_blank(void)
         pat_sig[k] = steps_sig(t);
     }
 #if DOCK_BAND
-    dock_room_load(0);                                  /* the power-on sounds' room: Yacht's (dock_lineups.c) */
-    dock_lineup = 0;
+    dock_lineup_load(0);                                /* the power-on sounds: Yacht (yours, if saved), its room */
 #endif
     undo_depth--;
     undo_clear();
@@ -1214,6 +1238,8 @@ static void persist_boot(void)                    /* before settings_init / pane
 
 static int project_used(uint32_t slot)
 {
+    if (DOCK_LU_PROJ(slot))
+        return 0;                                       /* (Dock: your Line-ups, not a project) */
 #if !MELODEE_FLASH
     slot &= 3u;
     int valid = bank_valid(proj_bank_slot[slot], BANK_STORE_SIZE) &&
@@ -1309,5 +1335,8 @@ static int shared_preferences_save(void)
 
 #if MELODEE_FLASH
 _Static_assert(sizeof(persist_t) <= ST_PAYLOAD_MAX, "settings do not fit one flash sector");
+#endif
+#if DOCK_SAVE
+#include "dock_store.c"                           /* your Line-ups, in slot D's flash (Dock) */
 #endif
 #endif /* PROJ_HOST */

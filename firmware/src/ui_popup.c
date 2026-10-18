@@ -94,11 +94,27 @@ static void ps_trk_v(char *b, uint32_t k, int none)
 }
 static void ps_add_v(char *b) { ps_trk_v(b, trk_n(), trk_n() >= NTRK); }
 static void ps_remove_v(char *b) { ps_trk_v(b, song.sel, trk_n() < 2u); }
+#if DOCK_SAVE
+static void ps_lu_v(char *b) { str_cpy(b, DOCK_LINEUPS[dock_lineup].name, DOCK_NAME + 1u); }
+static void ps_lu_mine_v(char *b) { str_cpy(b, (dock_mine >> dock_lineup) & 1u ? "Yours" : "", 8); }   /* (yours playing) */
+static void dock_save_chord(void);                      /* ui_input.c: as hold SAVE (playing, it stops first) */
+static void ps_lu_save(void) { dock_save_chord(); }
+static void ps_lu_factory(void)
+{
+    if (!((dock_mine >> dock_lineup) & 1u))
+        dock_lineup_say("IS FACTORY");                  /* (nothing of yours to lose) */
+    else
+        confirm_open(CF_DOCK_FACTORY, 0);
+}
+#endif
 static const sheet_row_t SHEET_STAGE[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
     {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0},
 #if !DOCK_BAND   /* Dock: the band is always four parts */
     {"Add track", ps_add_v, 0, track_add, 0}, {"Remove track", ps_remove_v, 0, 0, CF_DEL_TRACK},
+#endif
+#if DOCK_SAVE    /* Dock: the Line-up playing (dock_lineups.c): yours kept, or the factory one back */
+    {"Save line-up", ps_lu_v, 0, ps_lu_save, 0}, {"Factory line-up", ps_lu_mine_v, 0, ps_lu_factory, 0},
 #endif
 };
 /* the song's (SONG) */

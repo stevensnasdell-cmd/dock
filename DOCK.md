@@ -90,12 +90,26 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 
 Power-on default: **Yacht Dock**.
 
-**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/src/dock_lineups.c`. Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Still to come per Line-up: voice split, macros, groove.
+**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/lineups/` (built in as `firmware/src/dock_factory.h`). Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Each stores its voice split (all 1/6/1 for now); still to come per Line-up: macros, groove.
 
 **Built: the rooms.** Each Line-up sets Melodee's shared effects (three slots, CHAIN or SPLIT) and every part's sends
 when it loads: Yacht warm plate + Lead delay; Hot spring (Felucca's, ported as a new effect) + slapback; Kraut dry with
 a dark tape echo; Mod a small short room; Goth a huge drifting reverb, long delay and a chorus send (shimmer-ish: no
 pitch shift yet). Host cost 0.35–1.2 of a PROPHET voice; buffers 4–14 KiB from the audio arena (CHANGELOG). Tempo, which SELECT set on Melodee's HOME, needs a new home.
+
+**Built: your Line-ups.** A Line-up is one record of the whole band (`firmware/src/dock_lineups.c`): each part's
+engine, preset, every parameter and its engine's own patch (level, pan, sends and inserts among them), the room and the
+voice split, with room for macro offsets and a drum groove.
+- **Hold SAVE on HOME** keeps the band as it is now as *your* version of the Line-up playing. SELECT then loads yours,
+  and HOME's header marks it: a dot after the name ("Yacht • DOCK"). Power-on plays your Yacht if you saved one.
+- **Back to factory:** HOME's sheet (OCT+ held, as every page's sheet) has *Save line-up* and *Factory line-up*. The
+  second asks first ("Back to factory? Your saved Yacht goes"), then erases yours and plays the factory one. A sheet
+  row, not a gesture: SAVE held is the save, and a step that loses something asks first (docs/design/README.md:
+  dialogs for decisions).
+- The five factory Line-ups can't be lost: they are built in, the same records as yours, made from the text files in
+  `firmware/lineups/` (`tools/dock_lineup_import.py` writes `firmware/src/dock_factory.h`). To make an edited
+  Line-up the real one: Export it on the emulator, run the tool on the file (emu/README.md).
+- Yours live in the flash of Melodee's project slot D (no other flash was free): projects A–C as before.
 
 ## 6. Controls (FM-1 panel)
 
@@ -116,7 +130,7 @@ opens, HOME backs out.** Agreed map (2026-10-18); "today" is the firmware as it 
 | **LFO** | The page; **hold + turn a knob = momentary change, snaps back on release** | the page ✓ | both |
 | **FX** | **Hold = performance FX layer** (§7: white keys the effects, black keys who goes through); double-tap = latch | the member's three insert slots | live |
 | **GLO** | Tap = mixer (level, pan) ✓; **hold = mutes / solos on the black keys, tap tempo** | tap = mixer ✓; hold = Melodee's quick layer | live |
-| **SAVE** | Tap = save sound; **hold = save Line-up** (your version, revert, export: being built) | Melodee's save pages | sound |
+| **SAVE** | Tap = save sound; **hold on HOME = save Line-up** as yours ✓ (back to factory: HOME's sheet ✓; export: the emulator ✓) | Melodee's save pages; hold on HOME = save Line-up ✓ | sound |
 | **ARP** | Arp on/off for focused member; knobs = rate, pattern, octaves, gate | ✓ (Melodee's) | live |
 | **SCL** | Split / layer for the FM-1's own keys (tap a key for the split point) | Melodee's scales | sound |
 | **SEQ** | Clock / thru status (source, incoming BPM); tempo's new home | nothing | — |
@@ -242,7 +256,7 @@ Exit criteria: you'd happily jam on it for an hour with the Circuit; all five Do
 - Name settled: **Dock**, tagline **"Onboard a band."**
 - Drummer: which button opens the Drummer page; a few one-shot samples or pure synthesis?
 - Exact voice split defaults per Line-up.
-- Undo gesture (SAVE-held is taken by "save Line-up").
+- Undo gesture (SAVE-held is taken by "save Line-up"; back to a factory Line-up is a row of HOME's sheet).
 - Split/layer UI details.
 - Exact FM-1 screen resolution for the emulator.
 

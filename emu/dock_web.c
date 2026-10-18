@@ -9,12 +9,18 @@
  * the device's main loop (main.c fm1_main): every millisecond the clock moves on, the audio due by then renders
  * (mix.c mix_block, CTL frames at a time), and every 15 ms one UI frame runs (ui_input, ui_leds, ui_draw), with
  * ui_input in the millisecond between as main.c's wait loop calls it.
- * Not here yet: the flash (MELODEE_FLASH 0: nothing is kept across a reload), USB, TRS MIDI, the LED power-on sweep.
+ * The flash: a 1 MiB NOR image (emu/dock_flash.c, Felucca's), MELODEE_FLASH 1: the settings, user presets, projects
+ * and your Line-ups go into it, and the page keeps its sectors across a reload (panel/worklet.js). A Line-up's export
+ * (the page's "Export Line-up"): emu/dock_export.c.
+ * Not here yet: USB, TRS MIDI, the LED power-on sweep.
  *   emu/build.sh web  ->  build/emu/dock_web.wasm
  *   DOCK_WEB_SELFTEST: a native main that boots, presses a few things and writes build/emu/screen.ppm */
 #define MELODEE_VERSION "DOCK"
 #define UI_TEST_NO_MAIN 1
+#define MELODEE_FLASH 1
+#define UI_TEST_FLASH_HOOKS "../emu/dock_flash.c"
 #include "../tests/ui_test.c"
+#include "dock_export.c"
 
 /* ui_test.c declares the key matrix empty (its LEDs are read by id); the real one (hal/fm1_input.h), for the LEDs */
 static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
@@ -33,9 +39,14 @@ static int32_t web_master_adc = 700, web_knob = 700 * 16;      /* signed, as mai
 static void web_power_on(void)
 {
     ui_power_on();                             /* main.c melodee_init, as the UI tests do it */
-    settings_init();                           /* the default palette and preferences (no flash: defaults) */
+    persist_boot();                            /* main.c: the flash (the page's sectors): settings, presets, projects */
+    settings_init();                           /* the palette and preferences */
     palette_set(settings.palette);
     fm6_init();
+    undo_depth++;
+    dock_lineup_load(0);                       /* Yacht again, yours if you saved one (the flash is read now; after
+                                                * fm6_init, as main.c melodee_init loads after it) */
+    undo_depth--;
     song.master_q12 = 2048;
     lcd_fill(0, 0, 240, 240, T_BG);
     ui.force = 1;
@@ -123,12 +134,47 @@ EXPORT void web_boot(void)
         web_power_on();
 }
 
-/* no flash yet: the page's storage calls find an empty, never written one */
-static uint8_t web_nor_dummy[4096];
-EXPORT uint8_t *web_nor(void) { return web_nor_dummy; }
-EXPORT uint32_t web_nor_size(void) { return 0; }
-EXPORT void web_nor_erase(void) {}
-EXPORT uint32_t web_flash_writes_count(void) { return 0; }
+/* the flash: erased, then the page's saved sectors (web_nor), then boot */
+EXPORT uint8_t *web_nor(void) { return nor; }
+EXPORT uint32_t web_nor_size(void) { return sizeof nor; }
+EXPORT void web_nor_erase(void) { memset(nor, 0xFF, sizeof nor); }
+EXPORT uint32_t web_flash_writes_count(void) { return web_flash_writes; }
+
+/* "Export Line-up": the band as it plays now, as the Line-up playing, as text (emu/dock_export.c); its length, the
+ * text at web_lineup_text(); web_lineup_name() its file's name ("yacht.dock") */
+static char web_lineup_buf[24576];
+static dock_lineup_t web_lineup_rec;
+EXPORT char *web_lineup_text(void) { return web_lineup_buf; }
+EXPORT uint32_t web_lineup_export(void)
+{
+    static char names[NPART][24];
+    char *sound[NPART];
+    uint32_t k;
+    momentary_restore();
+    dock_lineup_capture(&web_lineup_rec, dock_lineup);
+    for (k = 0; k < NPART; k++) {
+        int pending;
+        uint8_t sel = song.sel;
+        song.sel = (uint8_t)(k == sel ? (k + 1u) % NPART : sel);   /* (the loaded sound, not one being browsed) */
+        dk_name(k, names[k], sizeof names[k], &pending);
+        song.sel = sel;
+        sound[k] = names[k];
+    }
+    return dock_lineup_json(&web_lineup_rec, sound, web_lineup_buf, sizeof web_lineup_buf);
+}
+EXPORT uint32_t web_lineup_mine(void) { return (dock_mine >> dock_lineup) & 1u; }   /* the one playing is yours */
+EXPORT uint32_t web_lineup(void) { return dock_lineup; }
+EXPORT char *web_lineup_name(void)
+{
+    static char f[DOCK_NAME + 6u];
+    uint32_t i, n = 0;
+    for (i = 0; i < DOCK_NAME && DOCK_LINEUPS[dock_lineup].name[i]; i++) {
+        char c = DOCK_LINEUPS[dock_lineup].name[i];
+        f[n++] = c >= 'A' && c <= 'Z' ? (char)(c + 32) : c == ' ' ? '-' : c;
+    }
+    str_cpy(f + n, ".dock", 6);
+    return f;
+}
 
 /* input, by the printed labels: buttons bit b = B_FX .. B_OCTUP (panel.c), keys bit k = key k (F3 .. G5),
  * encoders by role (EN_SELECT .. EN_K4), MASTER 0..1023 */

@@ -130,6 +130,25 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   whole list.
 
 ### Band
+- **Your Line-ups.** Hold SAVE on HOME keeps the whole band as your version of the Line-up playing: each part's
+  sound and every edit (all its parameters, its engine's own patch: Prophet, FM6 with its settings, CZ-1, a drum kit's
+  edits; JUNO, EP, organ and PLUCK keep theirs in the parameters), level, pan, sends and inserts, the room and the
+  voice split. From then on SELECT loads yours, and HOME's header shows a dot after its name ("Yacht • DOCK").
+  HOME's sheet (OCT+ held) has **Save line-up** and **Factory line-up** (back to the factory one, after a question;
+  yours is erased). Playing, a save stops the transport first (a flash erase stalls the audio), as a project's does.
+- Kept in the flash of Melodee's **project slot D** (`firmware/src/dock_store.c`: its A/B object, power-safe, up to 8
+  Line-ups of ~1.6 KB): no flash sector was free in the writable store. Projects A–C work as before; slot D shows as
+  LINE-UPS and refuses to load, save or erase as a project. RAM: none of its own (the projects' staging buffer).
+- **The factory Line-ups are full records too**, the same format as yours: `firmware/lineups/*.dock` (readable text,
+  made from the Line-ups as they were, every sound the same: each renders sample for sample as before) ->
+  `firmware/src/dock_factory.h` by `tools/dock_lineup_import.py`. A Line-up exported from the emulator becomes a
+  factory one with that tool. Room left in the format for the macros' offsets and a drum groove. Flash: 8 KB.
+- Restored values are not clamped to their parameters' ranges, so every sound plays as kept: JUNO SQUARE LEAD sets
+  AMT4 (its key tracking) to 64, one past that parameter's 63 (a Melodee project's load would clamp it).
+- `tests/dock_save_test.c` (in `tests/dock_tests.sh`): every factory Line-up loads exactly its record; save and load
+  back restore every value and render the same; Factory line-up asks, then restores the factory one; slot D is left
+  alone; a reboot plays yours from the flash; an export through the import tool is the same record, byte for byte;
+  `dock_factory.h` matches its files.
 - **Yacht's Lead** is now the CZ-1 ELEC.PIANO (picked by ear); it is also the power-on Lead.
 - The tuning check scans for the strongest frequency within 100 cents of the note played (autocorrelation misread
   rich low notes and short plucks, flagging in-tune sounds). Goth's Faint Memories wobbles and spreads on purpose and
@@ -198,6 +217,13 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   Melodee's own host tests assume the shared budget: run them with `-DDOCK_VOICES=0`.
 
 ### Emulator
+- **Saves survive a reload:** the emulator now has the FM-1's flash (`emu/dock_flash.c`, Felucca's: a 1 MiB NOR image
+  behind storage.c), with Melodee's flash code on (`MELODEE_FLASH 1`). The page keeps the sectors that change in the
+  browser's storage and gives them back at the next Switch on: your Line-ups, settings, user presets and projects.
+  The page now keeps all of Melodee's writable store (Felucca's list missed the Prophet banks and the project
+  extensions). `emu/build.sh web` checks it with the built page pieces (`emu/panel/reload_test.mjs`).
+- **Export Line-up** (a button under the panel) downloads the band as it plays as a small text file (`yacht.dock`),
+  for `tools/dock_lineup_import.py`.
 - Fixed harsh noise when turning MASTER down: the emulator's copy of the pot smoothing was unsigned and wrapped to a
   huge volume (the firmware's own is signed). The browser now also plays at the device's level (-6 dBFS ceiling).
 - On-screen FM-1 in the browser (`emu/`): the real firmware (DSP, sequencer, UI) compiled to WebAssembly, with

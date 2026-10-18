@@ -69,7 +69,8 @@ static int recalls(uint32_t i)
         ok &= g[0] == r->fx[s].type && g[1] == r->fx[s].mix && g[2] == r->fx[s].rate && g[3] == r->fx[s].chr &&
               song.g[G_MFXTONE + s] == r->fx[s].tone;
         for (uint32_t k = 0; k < NPART; k++)
-            ok &= trk[k].p[P_FXSEND + s] == r->send[k][s] && trk[k].p[P_FXTYPE + s * FX_PARAMS] == 0;
+            ok &= trk[k].p[P_FXSEND + s] == DOCK_LINEUPS[i].part[k].p[P_FXSEND + s] &&
+                  trk[k].p[P_FXTYPE + s * FX_PARAMS] == 0;
     }
     return ok;
 }
@@ -117,9 +118,13 @@ int main(void)
         for (uint32_t i = 0; i < DOCK_NLINEUPS; i++) {
             const dock_room_t *r = &DOCK_LINEUPS[i].room;
             for (uint32_t s = 0; s < FX_SLOTS; s++) ok &= r->fx[s].rate <= 127 && r->fx[s].chr <= 127 && r->fx[s].mix <= 127;
-            ok &= r->send[DOCK_BASS][0] <= r->send[DOCK_KEYS][0] && r->send[DOCK_BASS][0] <= r->send[DOCK_LEAD][0];
+            const int16_t *b = DOCK_LINEUPS[i].part[DOCK_BASS].p, *kk = DOCK_LINEUPS[i].part[DOCK_KEYS].p,
+                          *l = DOCK_LINEUPS[i].part[DOCK_LEAD].p;
+            ok &= b[P_FXSEND] <= kk[P_FXSEND] && b[P_FXSEND] <= l[P_FXSEND];
+            for (uint32_t k = 0; k < NPART; k++)
+                for (uint32_t s = 0; s < FX_SLOTS; s++) ok &= DOCK_LINEUPS[i].part[k].p[P_FXTYPE + s * FX_PARAMS] == 0;
         }
-        rcheck("every room's values in range; the Bass sends less than Keys and Lead", ok);
+        rcheck("every room's values in range; the Bass sends less than Keys and Lead; no inserts", ok);
     }
     /* each room through the whole band: finite, unclipped, heard; and the silence after */
     uint32_t bytes[DOCK_NLINEUPS], used[DOCK_NLINEUPS];
@@ -177,7 +182,7 @@ int main(void)
         double idle = cost(0), p1 = cost(1) - idle, p6 = cost(6) - idle;
         double room[DOCK_NLINEUPS];
         for (uint32_t i = 0; i < DOCK_NLINEUPS; i++) {
-            dock_room_load(i);
+            dock_room_apply(&DOCK_LINEUPS[i].room);
             for (uint32_t k = 0; k < NPART; k++) trk[k].p[P_FXSEND] = 127;   /* (the bus runs whatever it is sent) */
             run_ms(200);
             room[i] = cost(0) - idle;

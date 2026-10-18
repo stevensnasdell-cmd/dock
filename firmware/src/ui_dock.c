@@ -49,12 +49,14 @@ static uint32_t dk_sounding(uint32_t k)                 /* part k's voices held 
     return n;
 }
 
+#define DK_MINE_D 6                                     /* your Line-up's mark: a dot after its name (across) */
 /* the header on HOME: Melodee's (draw_head) whenever it has something to say (a message, a layer, recording, a song
- * playing); else DOCK, the Line-up, the clock (filled: an external clock leads; ring: the internal), the BPM */
+ * playing); else DOCK, the Line-up, the clock (filled: an external clock leads; ring: the internal), the BPM. A
+ * Line-up of yours (dock_lineups.c: saved, SELECT loads it) has a dot after its name, while it is the one playing */
 static void dk_head(void)
 {
     char b[8];
-    uint32_t sig, ext = midi_clock.mode != 0u;
+    uint32_t sig, ext = midi_clock.mode != 0u, mine = (dock_mine >> dock_lineup) & 1u;
     int32_t x;
     if (ui.msg_t || ui.layer || song.rec || chain.running || ui.bpm_t) {
         dk.head = 0;
@@ -62,7 +64,8 @@ static void dk_head(void)
         return;
     }
     fmt_int(b, song.g[G_BPM]);
-    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u + dock_lineup * 8u, b) + ux.gen * 977u + ux.pal * 31u;
+    sig = str_hash(1u + ext * 2u + (uint32_t)song.playing * 4u + dock_lineup * 8u + mine * 256u, b) + ux.gen * 977u +
+          ux.pal * 31u;
     if (!ui.force && sig == dk.head)
         return;
     dk.head = sig;
@@ -75,6 +78,10 @@ static void dk_head(void)
     {
         const char *nm = DOCK_LINEUPS[dock_lineup].name;
         int32_t w = text_w(TY_TX, nm) < 96 ? text_w(TY_TX, nm) : 96;
+        if (mine) {                                     /* "Yacht • DOCK": the dot in TEXT (status, not a member) */
+            cv_disc(x - 8 - DK_MINE_D / 2, H_HEAD / 2 + 1, DK_MINE_D, T_TEXT, 0);
+            x -= DK_MINE_D + 5;
+        }
         cv_free_text(x - 8 - w, ty_y(H_HEAD / 2, TY_TX), TY_TX, nm, T_MID, T_BG, 96);
     }
     cv_blit(0, Y_HEAD);
@@ -288,11 +295,12 @@ static void dock_lineup_turn(int32_t s)
 }
 
 /* the Line-up strip, in the knob strip's place DK_BROWSE_MS after SELECT turns: LINE-UP, its name in the wordmark's
- * face, its place among them */
+ * face (yours: the dot after it), its place among them */
 static void dk_lineup_strip(void)
 {
     char nm[12], where[8];
-    uint32_t i, sig;
+    uint32_t i, sig, mine = (dock_mine >> dock_lineup) & 1u;
+    int32_t e;
     for (i = 0; DOCK_LINEUPS[dock_lineup].name[i] && i + 1u < sizeof nm; i++) {
         char c = DOCK_LINEUPS[dock_lineup].name[i];
         nm[i] = c >= 'a' && c <= 'z' ? (char)(c - 32) : c;   /* (the wordmark's face: capitals) */
@@ -301,7 +309,7 @@ static void dk_lineup_strip(void)
     fmt_int(where, (int32_t)dock_lineup + 1);
     str_cpy(where + str_len(where), " / ", 4);
     fmt_int(where + str_len(where), (int32_t)DOCK_NLINEUPS);
-    sig = str_hash(7u, nm) + ux.gen * 977u + ux.pal * 31u;
+    sig = str_hash(7u + mine * 2u, nm) + ux.gen * 977u + ux.pal * 31u;
     if (!ui.force && sig == dk.strip)
         return;
     dk.strip = sig;
@@ -309,7 +317,9 @@ static void dk_lineup_strip(void)
     cv_begin(BOX_W, CARD_H, T_BG);
     cv_rrect(0, 0, BOX_W, CARD_H, 8, T_SURF, T_BG);
     cv_text_on(10, ty_y(15, TY_LB), TY_LB, "LINE-UP", T_MID, T_SURF);
-    cv_text_on(10, ty_y(34, TY_WM), TY_WM, nm, T_TEXT, T_SURF);
+    e = cv_text_on(10, ty_y(34, TY_WM), TY_WM, nm, T_TEXT, T_SURF);
+    if (mine)                                           /* yours: the header's dot */
+        cv_disc(e + 6 + DK_MINE_D / 2, 34, DK_MINE_D, T_TEXT, 0);
     cv_text_on(BOX_W - 10 - text_w(TY_MN, where), ty_y(34, TY_MN), TY_MN, where, T_MID, T_SURF);
     cv_blit(BOX_X, Y_LABEL);
 }

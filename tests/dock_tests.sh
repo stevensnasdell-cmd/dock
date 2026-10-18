@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Steven Snasdell
-# Dock's quick host checks (no JieLi toolchain needed): the band's voices, the JUNO, EP, organ and PLUCK engines, the Line-ups' rooms, the UI on Dock and on Melodee's own rules,
+# Dock's quick host checks (no JieLi toolchain needed): the band's voices, the JUNO, EP, organ and PLUCK engines, the Line-ups' rooms, saving them, the UI on Dock and on Melodee's own rules,
 # the emulator's boot and keys. Needs build/gen (emu/build.sh makes it).   tests/dock_tests.sh
 set -e
 cd "$(dirname "$0")/.."
@@ -25,6 +25,15 @@ cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_level_test tests/dock_level_tes
 run "the band's balance (every Line-up sound)" $OUT/dock_level_test
 cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_room_test tests/dock_room_test.c -lm
 run "the rooms: every Line-up recalls its own; bounded, heard, cost, RAM" $OUT/dock_room_test
+# your Line-ups: hold SAVE keeps the band, SELECT loads it back (every value, the same render), the factory one again;
+# then a new power-on from the flash that run left, and its export through the import tool into a factory entry
+cc $F -DMELODEE_USB_AUDIO=1 -Itests -o $OUT/dock_save_test tests/dock_save_test.c -lm
+run "your Line-ups: save, load (every value, the same render), factory, slot D" $OUT/dock_save_test $OUT/dock_save
+run "your Line-ups: a reboot plays yours from the flash" $OUT/dock_save_test reboot $OUT/dock_save.nor $OUT/dock_save.bin
+run "your Line-ups: export, then the import tool makes the same factory entry" sh -c "python3 tools/dock_lineup_import.py \
+    --header $OUT/dock_rt.h --array DOCK_RT $OUT/dock_save.dock && cc $F -DMELODEE_USB_AUDIO=1 -Itests \
+    -DDOCK_RT_H='\"$PWD/$OUT/dock_rt.h\"' -o $OUT/dock_rt_test tests/dock_save_test.c -lm && $OUT/dock_rt_test import $OUT/dock_save.bin"
+run "the factory Line-ups: dock_factory.h matches their files" python3 tools/dock_lineup_import.py --check
 # Melodee's UI suite checks Melodee's rules (1-4 tracks, chords on track 1): it runs with DOCK_BAND=0; on Dock its
 # track-count and track-1 chord checks fail by design. Dock's own behaviour is checked by the Dock tests here.
 cc $F -DMELODEE_USB_AUDIO=1 -DDOCK_BAND=0 -o $OUT/ui_test_melodee tests/ui_test.c -lm

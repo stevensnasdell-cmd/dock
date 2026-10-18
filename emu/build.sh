@@ -47,6 +47,8 @@ if [ "$1" = web ]; then                     # the panel emulator: build/emu/pane
     cp emu/panel/index.html emu/panel/worklet.js "$OUT/panel/"
     cp emu/panel/fonts/* "$OUT/panel/fonts/"
     echo "emu: $OUT/panel ($(wc -c < "$OUT/panel/dock_web.wasm" | tr -d ' ') B wasm)"
+    cp emu/panel/reload_test.mjs "$OUT/panel/"
+    node "$OUT/panel/reload_test.mjs" "$OUT/panel"     # your Line-up kept across a reload, as the page keeps it
     exit 0
 fi
 

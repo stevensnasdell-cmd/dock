@@ -176,6 +176,13 @@ Brief action results (saved, copied, invalid action) use the existing header-mes
 wrap in a temporary toast. A question requiring a decision uses a dialog; a value being edited stays at its
 control. These are feedback and interaction, rather than ongoing state indicators.
 
+- **Dock: your Line-up** (`ui_dock.c` dk_head, 2026-10-18). State: the Line-up playing is your saved version (hold
+  SAVE on HOME; dock_lineups.c). Mark: a 6 px dot in `TEXT` between the Line-up's name and the DOCK wordmark
+  ("Yacht • DOCK"), also after the name on the Line-up strip while SELECT turns. Lifetime: from the save, or a load
+  of yours, until another Line-up loads or Factory line-up erases yours; the header redraws when it changes. Priority:
+  part of HOME's normal context: a message, a layer or recording replaces the whole header (Melodee's) and the mark
+  comes back with HOME's. No label: the dot fits both fonts and every Line-up name.
+
 For each new indicator, specify its state, lifetime, priority, and compact label here, and extend the shared
 header renderer instead of choosing a new position in a page. Verify both fonts, crowded headers, persistence,
 and incremental redraws when the state ends or the selected track changes (`tests/ui_test.c`, `tests/ui_render.c`).

@@ -45,7 +45,14 @@ int main(void)
     dcheck("REC: no recording armed, transport stopped", !song.rec && !song.playing);
     hold(B_REC);
     dcheck("REC held: no capture into a pattern", steps_sig(TSEL) == sig && ui.home == 1u);
-    dcheck("the Stage sheet has no Add / Remove track", NELEM(SHEET_STAGE) == 5u);
+    {
+        uint32_t i, tracks = 0, lineup = 0;
+        for (i = 0; i < NELEM(SHEET_STAGE); i++) {
+            tracks += str_eq(SHEET_STAGE[i].label, "Add track") || str_eq(SHEET_STAGE[i].label, "Remove track");
+            lineup += SHEET_STAGE[i].act == ps_lu_save || SHEET_STAGE[i].act == ps_lu_factory;
+        }
+        dcheck("the Stage sheet has no Add / Remove track; it has Save and Factory line-up", !tracks && lineup == 2u);
+    }
 
     {   /* the sound lists: the band's three the same, entry by entry, with no drums; the drummer's only drums */
         uint32_t tot[NPART], h[NPART], drums_in_band = 0, other_in_drums = 0, n, src, kk, e, k, steps_ok = 1;
@@ -78,12 +85,12 @@ int main(void)
     {   /* the Line-ups: Yacht at power-on; SELECT on HOME steps through them, each loading its four sounds */
         uint32_t i, k, same = 1, loads = 1, rules = 1, mono = 1;
         for (k = 0; k < NPART; k++)
-            same &= DOCK_LINEUPS[0].snd[k][0] == TRK_DEF[k][0] && DOCK_LINEUPS[0].snd[k][1] == TRK_DEF[k][1];
+            same &= DOCK_LINEUPS[0].part[k].engine == TRK_DEF[k][0] && DOCK_LINEUPS[0].part[k].preset == TRK_DEF[k][1];
         dcheck("Yacht is the power-on line-up (TRK_DEF)", same);
         for (i = 0; i < DOCK_NLINEUPS; i++)
             for (k = 0; k < NPART; k++)
-                rules &= DOCK_ENGINE_OK(k, DOCK_LINEUPS[i].snd[k][0]) != 0 &&
-                         DOCK_LINEUPS[i].snd[k][1] < ENGINES[DOCK_LINEUPS[i].snd[k][0]]->npresets;
+                rules &= DOCK_ENGINE_OK(k, DOCK_LINEUPS[i].part[k].engine) != 0 &&
+                         DOCK_LINEUPS[i].part[k].preset < ENGINES[DOCK_LINEUPS[i].part[k].engine]->npresets;
         dcheck("every line-up: drums on the drummer only, real presets", rules);
         ui_power_on();
         frame();
@@ -91,14 +98,14 @@ int main(void)
             dock_lineup_turn(1);
             frame();
             for (k = 0; k < NPART; k++)
-                loads &= trk[k].eng_req == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][0] &&
-                         trk[k].preset == DOCK_LINEUPS[i % DOCK_NLINEUPS].snd[k][1];
+                loads &= trk[k].eng_req == DOCK_LINEUPS[i % DOCK_NLINEUPS].part[k].engine &&
+                         trk[k].preset == DOCK_LINEUPS[i % DOCK_NLINEUPS].part[k].preset;
             mono &= trk[DOCK_BASS].p[P_VOICE] == DOCK_MONO_MODE && trk[DOCK_LEAD].p[P_VOICE] == DOCK_MONO_MODE;
         }
         dcheck("SELECT steps through all five, each loading its four sounds", loads && dock_lineup == 0u);
         dock_lineup_turn(-1);
         dcheck("  and back round from Yacht to Goth", dock_lineup == DOCK_NLINEUPS - 1u &&
-                                                     trk[DOCK_KEYS].eng_req == DOCK_LINEUPS[DOCK_NLINEUPS - 1u].snd[1][0]);
+                                                     trk[DOCK_KEYS].eng_req == DOCK_LINEUPS[DOCK_NLINEUPS - 1u].part[1].engine);
         dcheck("Bass and Lead stay mono in every line-up", mono);
     }
 

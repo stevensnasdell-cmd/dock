@@ -69,8 +69,8 @@ int main(void){ web_boot(); run_ms(300);
     run_ms(1500);
     printf("%-6s tuning", DOCK_LINEUPS[i].name);
     for (uint32_t k=0;k<DOCK_DRUMS;k++){ char nm[24]; int pd; double c = (tune_cents(k,60) + tune_cents(k,72)) / 2;
-      const uint8_t *sd = DOCK_LINEUPS[i].snd[k];
-      int wobble = sd[0] == ENGI_PROPHET && sd[1] == 127;   /* Faint Memories: detuned and wobbling by design, picked by ear */
+      const dock_part_t *sd = &DOCK_LINEUPS[i].part[k];
+      int wobble = sd->engine == ENGI_PROPHET && sd->preset == 127;   /* Faint Memories: detuned and wobbling by design, picked by ear */
       int ok = wobble || fabs(c) <= 25.0; bad += !ok; dk_name(k,nm,sizeof nm,&pd); printf("  %s %-14s %+4.0fc%s|", R[k], nm, c, wobble ? "~" : ok ? " " : "!"); }
     printf("\n");
   }

@@ -66,6 +66,8 @@ a { color: inherit; }
 .keys, footer { margin: 16px 0 0; color: var(--dim); text-align: center; }
 .keys span { white-space: nowrap; margin: 0 8px; }
 .keys select { font: inherit; font-size: 12px; }
+.keys button { font: inherit; font-size: 13px; padding: 4px 12px; cursor: pointer; }
+.keys button:disabled { opacity: .4; cursor: default; }
 kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--rule); padding: 0 4px; color: var(--fg); }
 footer { margin-top: 12px; font-size: 12px; }
 footer nav a { margin: 0 6px; }
@@ -95,9 +97,11 @@ footer small { font-size: 11px; opacity: .8; }
     <option value="sign">relative sign bit</option>
   </select></span>
 </p>
+<p class="keys"><button id="export" type="button" disabled>Export Line-up</button>
+  <span>the band as it plays now, as a <kbd>.dock</kbd> file (emu/README.md)</span></p>
 
 <footer>
-  <small class="version">Dock preview · Melodee 1.4.1 base · nothing is saved yet</small><br>
+  <small class="version">Dock preview · Melodee 1.4.1 base · saves are kept in this browser</small><br>
   Dock by Steven Snasdell, on <a href="https://github.com/keremimo/melodee">Melodee</a> (Kerem Kilic) and <a href="https://github.com/hugelton/Felucca">Felucca</a> (Leo Kuroshita, Hügelton Instruments) · <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a> · this page from Felucca's browser build, after charlesvestal's <a href="https://github.com/charlesvestal/fm1-x0x">X0X</a> · DotGothic16 font, <a href="fonts/OFL.txt">SIL OFL 1.1</a><br>
   
   <small>M-VAVE and FM-1 are trademarks of their respective owners. Dock is not affiliated with or endorsed by them.</small>
@@ -502,6 +506,7 @@ async function switchOn() {
         const m = e.data;
         if (m.type === "ready") res();
         else if (m.type === "error") rej(new Error(m.message));
+        else if (m.type === "lineup") lineupFile(m);
         else if (m.type === "frame") {
           if (m.fb) drawScreen(m.fb);
           if (m.leds) drawLights(lastLeds = m.leds, m.anim);
@@ -515,6 +520,7 @@ async function switchOn() {
     });
     await ac.resume();
     document.getElementById("start").hidden = true;
+    exportBtn.disabled = false;
     go.textContent = "On";
     if (ac.sampleRate !== 44100) console.warn(`Dock: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
     syncButtons();
@@ -529,6 +535,19 @@ async function switchOn() {
   }
 }
 document.getElementById("go").addEventListener("click", switchOn);
+
+// ------------------------------------------------------------------ Export Line-up: a .dock file, downloaded
+const exportBtn = document.getElementById("export");
+exportBtn.addEventListener("click", () => { if (node) send({ type: "export" }); });
+function lineupFile(m) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([m.text], { type: "application/json" }));
+  a.download = m.name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 document.addEventListener("visibilitychange", () => send({ type: "visible", on: !document.hidden }));
 </script>
 </body>

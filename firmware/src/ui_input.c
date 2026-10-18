@@ -565,7 +565,7 @@ static void rec_play(void)
 /* SAVE + REC (either pressed while the other is held): the project back to its slot (project.c project_quick_save);
  * playing, the transport stops first and the save follows (qsave_poll). Neither button then does its own thing */
 static void project_quick_save(void);
-static uint8_t qsave_req;
+static uint8_t qsave_req, qsave_dock;                   /* qsave_dock: Dock's hold SAVE on HOME, the Line-up's */
 static void qsave_chord(void)
 {
     ui.save_t0 |= 2u;
@@ -576,10 +576,24 @@ static void qsave_chord(void)
     }
     qsave_req = 1;
 }
+#if DOCK_SAVE
+static void dock_save_chord(void)                       /* Dock: the Line-up's save, as the chord's (HOME's sheet too) */
+{
+    qsave_dock = 1;
+    qsave_chord();
+}
+#endif
 static void qsave_poll(void)
 {
     if (qsave_req && !transport_busy() && !transport_req) {
         qsave_req = 0;
+#if DOCK_SAVE
+        if (qsave_dock) {
+            qsave_dock = 0;
+            dock_lineup_save();                         /* (dock_lineups.c: your version of the Line-up playing) */
+            return;
+        }
+#endif
         project_quick_save();
     }
 }
@@ -1944,6 +1958,10 @@ static void ui_confirm_accept(void)
         }
     } else if (kind == CF_DEL_TRACK) {
         track_remove(ui.confirm_trk % NTRK);
+#if DOCK_SAVE
+    } else if (kind == CF_DOCK_FACTORY) {               /* HOME's sheet: back to the factory Line-up */
+        dock_lineup_factory();
+#endif
     } else if (kind == CF_TAKE_JAM) {
         jam_take();
     } else if (kind == CF_NEW_SONG) {
@@ -2162,6 +2180,7 @@ static void ui_input(void)
         return;
     }
     if (save == BT_HOLD && !ui.confirm) {
+        qsave_dock = (uint8_t)(DOCK_SAVE && ui.home && !ui.home_pg);   /* Dock: on HOME, the Line-up */
         qsave_chord();
         qsave_poll();
     } else if (save == BT_TAP && !ui.confirm)
@@ -2249,8 +2268,10 @@ static void ui_input(void)
     }
     {   /* SAVE + REC: the quick save */
         uint32_t sv = 1u << panel.btn[B_SAVE], rc = 1u << panel.btn[B_REC];
-        if (((pressed & rc) && (fm1_in.buttons & sv)) || ((pressed & sv) && (fm1_in.buttons & rc)))
+        if (((pressed & rc) && (fm1_in.buttons & sv)) || ((pressed & sv) && (fm1_in.buttons & rc))) {
+            qsave_dock = 0;
             qsave_chord();
+        }
         qsave_poll();
     }
     for (id = 0; id < 14u; id++) {

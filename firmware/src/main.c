@@ -161,7 +161,7 @@ static void melodee_init(void)
         pat_last[i] = 0;
     }
 #if DOCK_BAND
-    dock_room_load(0);                        /* Yacht's room with its sounds (dock_lineups.c) */
+    dock_lineup_load(0);                      /* Yacht (yours when saved): its sounds, room, voices (dock_lineups.c) */
 #endif
     undo_depth--;
     song.sel = 0;
