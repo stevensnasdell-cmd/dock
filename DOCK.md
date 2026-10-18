@@ -99,30 +99,37 @@ pitch shift yet). Host cost 0.35–1.2 of a PROPHET voice; buffers 4–14 KiB fr
 
 ## 6. Controls (FM-1 panel)
 
-Navigation follows Baud Girl's principles (concept only): **SELECT picks a parameter, ALGORITHM changes it, SEL opens, HOME backs out.**
+Dock has two jobs, and the panel serves both: **dialling in the right sound** (browse, edit, compare, save) and
+**shaping it live while an external sequencer plays** (macros, mutes, momentary tweaks, performance effects).
+Navigation follows Baud Girl's principles (concept only): **SELECT picks a parameter, ALGORITHM changes it, SEL
+opens, HOME backs out.** Agreed map (2026-10-18); "today" is the firmware as it stands.
 
-| Control | Dock |
-|---|---|
-| **Black keys 1–3** (or held button + key) | Focus Bass / Keys / Lead |
-| **PRESETS** | Browse sounds for the focused member |
-| **SELECT** | Pick parameter; press toggles knobs PART ↔ BAND; **on HOME, turn = change Line-up** |
-| **ALGORITHM** | Change the picked parameter (on HOME: pick the member, as now) |
-| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value |
-| **MASTER** | Volume |
-| **HOME** | Stage view; hold = menu (channels, voice split, clock, theme) |
-| **EDIT** | Deep engine pages for the focused member |
-| **FX** | Hold = performance FX layer; double-tap = latch |
-| **LFO** | Hold + turn a knob = momentary change, snaps back on release |
-| **ENV** | Focused member's envelope |
-| **ARP** | Arp on/off for focused member; knobs = rate, pattern, octaves, gate |
-| **SCL** | Split / layer setup (tap a key for split point) |
-| **GLO** | Hold = mutes/solos on black keys, tap tempo |
-| **SEQ** | Clock / thru status (source, incoming BPM) |
-| **REC** | Arm looper for focused member; hold = clear member |
-| **SAVE** | Tap = save sound; hold = save Line-up (undo lives on a different gesture, decide in emulator) |
-| **PLAY** | Start/stop looper + internal clock (ignored when external clock is master) |
-| **OCT− / OCT+** | Octave for focused member; both together = panic |
-| **Keys** | Play focused member, or the split/layer; lit in member colour; incoming MIDI notes flash |
+| Control | Dock (the plan) | Today | Job |
+|---|---|---|---|
+| **KNOB 1–4** | **Tone · Bite · Shape · Space** — always. PART = focused member; BAND = all members, relative to each part's own value | the member's four engine settings (CUT, RES, ENV…) | live |
+| **SELECT** | On HOME: turn = change Line-up ✓; press = PART ↔ BAND. On pages: turn the pages | turn = Line-up ✓ | both |
+| **ALGORITHM** | Pick the focused member (on pages: change the picked parameter) | picks the member ✓ | both |
+| **Black keys 1–4** (or held button + key) | Jump straight to Bass / Keys / Lead / Drums | play notes | live |
+| **PRESETS** | Browse the focused member's sounds (engine strip, per-engine count) | ✓ | sound |
+| **EDIT** | Deep engine pages for the focused member; **A/B**: compare your edit with the saved version | engine pages ✓; hold = undo | sound |
+| **ENV** | Focused member's envelope | ✓ | sound |
+| **LFO** | The page; **hold + turn a knob = momentary change, snaps back on release** | the page ✓ | both |
+| **FX** | **Hold = performance FX layer** (§7: white keys the effects, black keys who goes through); double-tap = latch | the member's three insert slots | live |
+| **GLO** | Tap = mixer (level, pan) ✓; **hold = mutes / solos on the black keys, tap tempo** | tap = mixer ✓; hold = Melodee's quick layer | live |
+| **SAVE** | Tap = save sound; **hold = save Line-up** (your version, revert, export: being built) | Melodee's save pages | sound |
+| **ARP** | Arp on/off for focused member; knobs = rate, pattern, octaves, gate | ✓ (Melodee's) | live |
+| **SCL** | Split / layer for the FM-1's own keys (tap a key for the split point) | Melodee's scales | sound |
+| **SEQ** | Clock / thru status (source, incoming BPM); tempo's new home | nothing | — |
+| **REC** | Arm the looper for the focused member (notes, not audio); hold = clear member | nothing | live |
+| **PLAY** | Start/stop looper + internal clock (ignored when an external clock leads) | internal clock ✓ | live |
+| **HOME** | Stage view; hold = menu (channels, voice split, clock, theme) | ✓ | — |
+| **OCT− / OCT+** | Octave for focused member; both together = panic | ✓ (elsewhere: back / enter) | — |
+| **MASTER** | Volume | ✓ | — |
+| **Keys** | Play focused member, or the split/layer; lit in member colour; incoming MIDI notes flash | ✓ | — |
+
+**Build order** (after saving): macros with PART/BAND → A/B compare → hold-GLO mutes → hold-LFO momentary tweaks →
+hold-FX performance layer → black-key focus → SCL split → SEQ clock page → looper. Demote or remove Melodee pages
+Dock doesn't need (projects, song mode, scales) as their buttons get Dock's jobs: a calmer Dock, more room on the chip.
 
 Knob meanings per engine:
 
