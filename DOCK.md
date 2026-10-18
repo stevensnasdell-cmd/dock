@@ -127,8 +127,8 @@ backs out.** The FM-1's knobs **only turn** (no push switch: the firmware reads 
 | **Black keys 1–4** (or held button + key) | Jump straight to Bass / Keys / Lead / Drums | play notes | live |
 | **PRESETS** | Browse the focused member's sounds (engine strip, per-engine count) | ✓, on every page (ALL, RECENT, categories; no FAVES) | sound |
 | **EDIT** | Deep engine pages for the focused member; **A/B**: compare your edit with the saved version | section list ✓ (KNOB 2 a section, OCT+ opens, SELECT its pages, OCT− back); hold = undo | sound |
-| **ENV** | Focused member's envelope | ✓ | sound |
-| **LFO** | The page; **hold + turn a knob = momentary change, snaps back on release** | the page ✓ | both |
+| **ENV** | Focused member's envelope: page 1 the same on every engine (ATK DEC SUS REL, relative), then the engine's own | ✓ common page, then the engine's own pages, ADSR, ENV DEST | sound |
+| **LFO** | Page 1 the same on every engine (RATE DEPTH, relative), then the engine's own, MOD last; **hold + turn a knob = momentary change, snaps back on release** | ✓ common page, engine's own, LFO WAVE, LFO SYNC, LFO DEST, MOD | both |
 | **FX** | **Hold = performance FX layer** (§7: white keys the effects, black keys who goes through); double-tap = latch | lands on the room (SHARED) ✓, then the member's own slots | live |
 | **GLO** | Tap = mixer (level, pan) ✓; **hold = mutes / solos on the black keys, tap tempo** | tap = mixer ✓; hold = mutes / solos B K L D, levels, tap tempo ✓ (Melodee's layer, relabelled) | live |
 | **SAVE** | Tap = save sound; **hold on HOME = save Line-up** as yours ✓ (back to factory: HOME's sheet ✓; export: the emulator ✓) | Save as user; hold on HOME = save Line-up ✓; menu's Band: save, factory ✓ | sound |
@@ -144,8 +144,16 @@ backs out.** The FM-1's knobs **only turn** (no push switch: the firmware reads 
 
 **Build order** (after saving): macros with PART/BAND → A/B compare → hold-GLO mutes → hold-LFO momentary tweaks →
 hold-FX performance layer → black-key focus → SCL split → looper. Melodee's pages Dock doesn't need are off the panel
-(docs/design/DOCK_SIMPLIFY.md, done 2026-10-18; SEQ's clock page with it); next the common ENV / LFO pages, then the
-macros.
+(docs/design/DOCK_SIMPLIFY.md, done 2026-10-18; SEQ's clock page with it); the common ENV / LFO pages (done
+2026-10-18, below); next the macros.
+
+**ENV and LFO, the same on every engine** (`firmware/src/dock_front.c`). Page 1 of each is a front door: ATK DEC SUS
+REL, and RATE DEPTH, as offsets that nudge the sound's own envelopes and LFOs from where the sound has them (0 = the
+sound as made; 16 steps = twice as long; levels toward the top or toward nothing). Prophet: both envelopes, its LFO;
+FM6: every operator's EG, its LFO; CZ-1: the DCW and DCA envelopes, its vibrato; EP: DECAY, RELEASE, TREM; organ and
+PLUCK: the ADSR plus the percussion's decay / the string's damping; JUNO, SID: the ADSR; a kit: DECY only. A control
+with no meaning on an engine reads "--" (EP: ATK, SUS; a kit: all but DEC). The engine's own pages follow unchanged.
+The offsets reset when a sound loads and are kept with a saved Line-up; the Shape macro will reuse the same wiring.
 
 Knob meanings per engine:
 

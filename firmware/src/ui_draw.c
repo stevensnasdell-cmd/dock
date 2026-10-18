@@ -845,9 +845,9 @@ static void draw_columns(void)
         }
 #endif
 #if DOCK_BAND
-        if (cur_page()->scope == SC_FRONT && !dock_front_live(TSEL, cur_page()->id[c])) {   /* Dock's common ENV /
-            draw_column(c, d->label, "--", "", T_DIM, -1, ICON_AUTO);                    /* LFO: nothing to move */
-            continue;                                                                     /* on this engine */
+        if (cur_page()->scope == SC_FRONT && !dock_front_live(TSEL, cur_page()->id[c])) {
+            draw_column(c, d->label, "--", "", T_DIM, -1, ICON_AUTO);   /* (Dock's common ENV / LFO: nothing to */
+            continue;                                                    /* move on this engine) */
         }
 #endif
         if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {

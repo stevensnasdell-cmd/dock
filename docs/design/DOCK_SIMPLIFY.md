@@ -5,6 +5,10 @@ EDIT's **SCALE** page is FM6's operator keyboard level scaling (break point, dep
 not a tuning, so it stays. The Prophet's STORE page went with FM6's (Save as user does both). PRESETS browses sounds
 on every page, not only EDIT's.
 
+**Done (job 2), 2026-10-18:** the common ENV and LFO pages (CHANGELOG "Common ENV and LFO"): page 1 of each on every
+engine, relative to the sound (`firmware/src/dock_front.c`), the engine's own pages after it; Melodee's ENV, LFO and
+LFO 2 pages are now ADSR, LFO WAVE and LFO SYNC.
+
 **Approved by Steven, 2026-10-18**, with the proposed answers to the four questions (Favourites removed, MOD matrix kept
 at the end of LFO, metronome/count-in removed until the looper, chord keys removed), and one rule added: common pages
 (ENV, LFO) are a **front door, never a lowest common denominator**. Page 1 is a common control on every engine that

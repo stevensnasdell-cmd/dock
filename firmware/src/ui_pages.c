@@ -46,7 +46,7 @@ static uint32_t pv_kind(void)
     if (ui.home || act_cols() || grid_on())
         return PV_NONE;
     if ((pg->graph == GR_ADSR && pg->scope == SC_TRACK) || pg->graph == GR_LFO || pg->graph == GR_FMEG ||
-        pg->graph == GR_FMPEG)
+        pg->graph == GR_FMPEG || pg->graph == GR_FRONT)
         return PV_CURVE;
     if (pg->graph == GR_NONE || pg->graph == GR_ARP || pg->graph == GR_STEPS ||
         pg->graph == GR_CHORD)
@@ -306,10 +306,8 @@ static int32_t pv_hot(void) { return ui.hot_t ? (int32_t)(ui.hot_col & 3u) : -1;
 /* ---------------------------------------------------------- CURVE --- */
 /* ENV: attack (linear), decay (exponential to the sustain), the sustain held, the release (exponential); the area
  * under it tinted; a handle at each segment's end, the segment turning in text (its value: the strip) */
-static void pv_env(int32_t h)
+static void pv_env_v(int32_t h, int32_t va, int32_t vd, int32_t vs, int32_t vr, int ghost)
 {
-    const page_t *pg = cur_page();
-    int32_t va = TSEL->p[pg->id[0]], vd = TSEL->p[pg->id[1]], vs = TSEL->p[pg->id[2]], vr = TSEL->p[pg->id[3]];
     int32_t top = 14, bot = h - 12, x0 = 12, x1 = x0 + 10 + va * 40 / 127, x2 = x1 + 16 + vd * 52 / 127;
     int32_t x4 = PV_PANEL_W - 14, x3 = x4 - 24 - vr * 48 / 127, sus = vs * 1000 / 127, hot = pv_hot(), x, py = 0;
     int32_t e = 32768, kd = 150733 / (x2 - x1), kr = 150733 / (x4 - x3);
@@ -323,10 +321,17 @@ static void pv_env(int32_t h)
         else if (seg == 2) l = sus;
         else { e = x == x3 ? 32768 : (e * (32768 - kr)) >> 15; l = sus * e >> 15; }
         y = PVY(l);
+        if (ghost) {                                    /* (Dock's common ENV: the shape as made, a thin line) */
+            cv_vspan_aa(x, x > x0 ? py : y, y, T_LINE);
+            py = y;
+            continue;
+        }
         cv_rect(x, y / 16 + 1, 1, bot - y / 16, sf[seg]);
         cv_vspan_aa(x, x > x0 ? py : y, y, seg == hot ? T_TEXT : sc[seg]);
         py = y;
     }
+    if (ghost)
+        return;
     {   /* the handles: the attack's peak, the decay's end, the sustain's end, the release's end */
         const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, PVY(sus) / 16, PVY(sus) / 16, bot};
         uint32_t i;
@@ -338,6 +343,49 @@ static void pv_env(int32_t h)
     }
 #undef PVY
 }
+static void pv_env(int32_t h)
+{
+    const page_t *pg = cur_page();
+    pv_env_v(h, TSEL->p[pg->id[0]], TSEL->p[pg->id[1]], TSEL->p[pg->id[2]], TSEL->p[pg->id[3]], 0);
+}
+#if DOCK_BAND
+/* Dock's common ENV / LFO (dock_front.c): a shape as made, thin, and the same shape nudged by the offsets in the knobs'
+ * colours over it (ENV: each segment longer or shorter, the sustain higher or lower; LFO: faster or slower, deeper or
+ * shallower). The engine's own shape differs; this shows which way each knob moves it, and how far */
+#define PV_FR_A 20                                      /* the shape as made: an ADSR's values (pv_env_v) */
+#define PV_FR_D 50
+#define PV_FR_S 88
+#define PV_FR_R 50
+static void pv_front(int32_t h)
+{
+    const page_t *pg = cur_page();
+    const int16_t *o = dock_front[song.sel % NPART];
+    if (pg->id[0] == FR_ATK) {                          /* (struck, EP and a kit: no attack, no sustain) */
+        int32_t a = dock_front_live(TSEL, FR_ATK) ? PV_FR_A : 0, su = dock_front_live(TSEL, FR_SUS) ? PV_FR_S : 0;
+        pv_env_v(h, a, PV_FR_D, su, PV_FR_R, 1);
+        pv_env_v(h, fr_step(a, o[FR_ATK], FR_SPO_ADSR, 0, 127), fr_step(PV_FR_D, o[FR_DEC], FR_SPO_ADSR, 0, 127),
+                 fr_lvl(su, o[FR_SUS], 0, 127), fr_step(PV_FR_R, o[FR_REL], FR_SPO_ADSR, 0, 127), 0);
+        return;
+    }
+    {   /* LFO: the wave as made two cycles at half the reach (thin), nudged: x2 the cycles every 32 steps of RATE (the
+         * sound's own doubles every 16: drawn calmer), DEPTH's reach (the hot knob's colour turning in text) */
+        int32_t top = 16, bot = h - 14, mid = (top + bot) / 2, half = (bot - top) / 2, x, hot = pv_hot(), k;
+        int32_t amp = fr_lvl(48, o[FR_DEPTH], 0, 96);
+        uint32_t inc = (uint32_t)(((uint64_t)(0x80000000u / 52u) * FR_EXP2[clamp(o[FR_RATE] / 2, -64, 64) + 64]) >> 16);
+        for (k = 0; k < 2; k++) {
+            uint32_t ph = 0, step = k ? inc : 0x80000000u / 52u;
+            int32_t a = k ? amp : 48, py = 0;
+            uint16_t c = !k ? T_LINE : hot >= 0 ? T_TEXT : T_KNOB(1);
+            for (x = 16; x < PV_PANEL_W - 14; x++, ph += step) {
+                int32_t y = mid * 16 - (int32_t)((int64_t)sine_i(ph) * half * 16 * a / 96 / 32768);
+                cv_vspan_aa(x, x > 16 ? py : y, y, c);
+                py = y;
+            }
+        }
+        cv_rect(16, mid, PV_PANEL_W - 30, 1, T_LINE);
+    }
+}
+#endif
 /* LFO: two cycles from its phase, its reach dashed (the fade in, then the depth), the zero line; where it goes (the
  * strongest of LFO DEST's) as a chip at the top left (its rate: the strip) */
 static void pv_lfo(int32_t h)
@@ -425,6 +473,10 @@ static void pv_curve(int32_t h)
 {
     if (cur_page()->graph == GR_FMEG || cur_page()->graph == GR_FMPEG)
         pv_dxeg(h);
+#if DOCK_BAND
+    else if (cur_page()->graph == GR_FRONT)
+        pv_front(h);
+#endif
     else if (cur_page()->graph == GR_ADSR)
         pv_env(h);
     else
@@ -504,6 +556,10 @@ static uint32_t pv_curve_sig(void)
     h = (h ^ (uint32_t)(TSEL->p[P_LD_PIT] + 131 * TSEL->p[P_LD_FLT] + 17161 * TSEL->p[P_LD_SHP])) * 16777619u;
     h = (h ^ (uint32_t)(TSEL->p[P_LD_AMP] + 256 * TSEL->p[P_LPOL] + 65536 * TSEL->p[P_LWAVE])) * 16777619u;
     h ^= fm6_pgen[song.sel % NTRK] * 2654435761u + fm6_opsel * 131u;   /* (FM6's EG pages: its patch, the operator) */
+#if DOCK_BAND
+    for (c = 0; c < FR_N; c++)                          /* (Dock's common ENV / LFO: the offsets) */
+        h = (h ^ (uint32_t)(uint16_t)dock_front[song.sel % NPART][c]) * 16777619u;
+#endif
     return h ^ (uint32_t)(pv_hot() + 1) * 40503u ^ ux.gen * 977u ^ ux.pal * 31u ^ ui.page * 7919u ^ song.sel * 13u;
 }
 

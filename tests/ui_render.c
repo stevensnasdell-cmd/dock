@@ -482,6 +482,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
 #if DOCK_SAVE
        S_DOCK_MINE, S_DOCK_MINE_STRIP, S_DOCK_SHEET_FACTORY, S_DOCK_FACTORY,   /* Dock: your Line-up (dock_lineups.c); */
        S_DOCK_CLOCK, S_DOCK_CLOCK_EXT, S_DOCK_BAND_SPLIT, S_DOCK_GLOBAL,       /* the CLOCK page, the menu's Band */
+       S_DOCK_ENV, S_DOCK_LFO, S_DOCK_ENV_EP, S_DOCK_ENV_DRUM, S_DOCK_ADSR,    /* the common ENV / LFO (dock_front.c) */
 #endif
        S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
@@ -511,6 +512,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
 #if DOCK_SAVE
     "dock_mine", "dock_mine_strip", "dock_band_factory", "dock_factory",
     "dock_clock", "dock_clock_ext", "dock_band_split", "dock_global",
+    "dock_env", "dock_lfo", "dock_env_ep", "dock_env_drum", "dock_adsr",
 #endif
 };
 
@@ -1133,6 +1135,17 @@ static void setup(int s)
         break;
     case S_DOCK_BAND_SPLIT: song.playing = 0; go_home(); ui.menu = 1; ui.menu_sel = MI_SPLIT; break;
     case S_DOCK_GLOBAL: song.playing = 0; go_title("GLOBAL"); ui.hot_col = 1; ui.hot_t = 40; break;
+    /* the common ENV and LFO: the Bass (PROPHET) nudged (REL turning, then DEPTH); the Keys' EP (ATK, SUS greyed); the
+     * drummer's (DEC alone); a JUNO's own ADSR after them */
+    case S_DOCK_ENV: case S_DOCK_LFO:
+        song.playing = 0; track_select(DOCK_BASS); go_title(s == S_DOCK_ENV ? "ENV" : "LFO");
+        dock_front[DOCK_BASS][FR_ATK] = 20; dock_front[DOCK_BASS][FR_DEC] = -16; dock_front[DOCK_BASS][FR_SUS] = 30;
+        dock_front[DOCK_BASS][FR_REL] = 40; dock_front[DOCK_BASS][FR_RATE] = 24; dock_front[DOCK_BASS][FR_DEPTH] = -30;
+        ui.hot_col = s == S_DOCK_ENV ? 3 : 1; ui.hot_t = 40;
+        break;
+    case S_DOCK_ENV_EP: song.playing = 0; track_select(DOCK_KEYS); go_title("ENV"); break;
+    case S_DOCK_ENV_DRUM: song.playing = 0; track_select(DOCK_DRUMS); go_title("ENV"); break;
+    case S_DOCK_ADSR: song.playing = 0; track_select(DOCK_KEYS); eng(ENGI_JUNO); go_title("ADSR"); break;
 #endif
     /* .. MIXER with one, two (track 2 selected, its PAN turned), three (track 3 muted, track 1 armed); PATTERNS and SONG
      * with two; GLO with two (track 2 muted); NEW SONG's roles as they open without a template */

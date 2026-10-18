@@ -5,8 +5,51 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 ## Unreleased
 
+### Common ENV and LFO (job 2 of 3)
+ENV and LFO now mean the same thing on every engine (docs/design/DOCK_SIMPLIFY.md: a front door, never a lowest
+common denominator). Under `DOCK_BAND`: with `-DDOCK_BAND=0` Melodee's pages and sound are unchanged.
+- **ENV page 1** (ATK DEC SUS REL) and **LFO page 1** (RATE DEPTH) on every engine. Each is an offset, -64 .. +63,
+  that nudges the sound's **own** envelopes and LFOs from where the sound has them; **0 is the sound as made**. Times:
+  16 steps = twice as long (RATE: twice as fast), so the ends are x16 and /16; levels (SUS, DEPTH): + toward the top,
+  - toward nothing. Nothing is overwritten: the engine's own pages keep the sound's values and still change it.
+- What moves, by engine (`firmware/src/dock_front.c`): PROPHET both envelopes (filter and amp) and its LFO's rate and
+  amount; FM6 every operator's EG (R1, R2 R3, L3, R4) and its LFO's speed and depths; CZ-1 the DCW and DCA envelopes of
+  both lines (stage 1, the stages to the sustain point, its level, the stages after) and its vibrato; EP DECAY,
+  RELEASE and TREM; organ the ADSR and the percussion's decay; PLUCK the ADSR and the string's DAMP; JUNO and SID the
+  ADSR (SID: the chip's envelope); a drum kit its DECY. On every engine the part's own LFO moves with RATE and DEPTH
+  too. DEPTH on a sound with no LFO brings in the main target: the engine's own LFO where it is routed, else a vibrato.
+- A control that means nothing on an engine reads **"--"**, greyed, and a turn does nothing (EP: ATK, SUS; a kit: all
+  but DEC); a page with none is not shown (a kit: no LFO page, no ADSR or ENV DEST, which did nothing there).
+- **The pages:** ENV opens on the common page, then the engine's own (Prophet: FLT ENV, AMP ENV, ENV MOD; FM6: EG
+  RATE, EG LVL, PITCH EG, PITCH LV; CZ-1: the line's rates and levels; EP: BODY, with DECAY and RELEASE), then the
+  part's **ADSR** (Melodee's ENV page, renamed) and ENV DEST where they act. LFO opens on the common page, then the
+  engine's own (Prophet: LFO, WHEEL; FM6: FM LFO; CZ-1: VIBRATO), then the part's **LFO WAVE** and **LFO SYNC**
+  (Melodee's LFO and LFO 2, renamed), LFO DEST, MOD last. SELECT on the common page turns through the same list.
+- The pictures: the envelope or wave as made, thin, and the nudged one over it in the knobs' colours (a struck sound,
+  EP or a kit: a hit, no sustain).
+- The offsets are the part's: 0 again when a sound loads (PRESETS, a Program Change, a user sound), back with Undo,
+  **kept with a saved Line-up** (`dock_lineup_t.front`, at the end of the record; the .dock files' `"env"` and
+  `"lfo"` per part, optional) and 0 on a factory one. Your Line-ups saved before this load as they were, offsets 0.
+- Measured first (host, the generic ADSR / LFO pushed to their ends, as job 1 found): the old ENV page did nothing at
+  all on PROPHET, FM6, CZ-1, EP and the kits (0.0 dB), the old LFO RATE nothing on PROPHET, FM6, CZ-1. Now every
+  control moves every engine it means something on (`tests/dock_front_test.c`), and "+" is longer: release at -32 / 0
+  / +32, PROPHET 290 / 1190 / 4720 ms, FM6 290 / 1200 / 4410, CZ-1 30 / 100 / 410, JUNO 70 / 270 / 1130, EP 40 / 90 /
+  520; decay CZ-1 610 / 2390 / 6000+, the 808 kit 60 / 250 / 990.
+- **At 0 nothing changed:** 211 renders (every engine's presets, a sample of each, and the five Line-ups) are the same
+  sample for sample as before these offsets existed (checked against the previous commit's build); the balance and
+  tuning test passes as before.
+- `tests/dock_front_test.c` (in `tests/dock_tests.sh`): every control on every engine moves the sound, greyed ones do
+  nothing; "+" longer; nudged and back to 0, the same render; the engine's own page after the common one still changes
+  the sound with the offsets set; the pages each engine visits; EP's "--" cells; saving, factory, a sound load, Undo,
+  an old record. `ui_render` gains the common pages (nudged, EP, a kit) and the ADSR (0 lint findings).
+- Wiring for the macros: every engine reads its offsets through one function (`fr_off`), so the Shape macro (job 3)
+  can add its share there and reach every envelope the same way.
+- Not done: Save as user keeps the sound without the offsets (they stay the part's until the next sound): baking them
+  into a user sound needs each engine's inverse (a follow-up). EP: a tine still ringing that is struck again keeps its
+  decay (the engine's own behaviour, as with its DECAY knob): a change shows on the next fresh strike.
+
 ### Panel (the simplification)
-The approved map, `docs/design/DOCK_SIMPLIFY.md` (job 1 of 3; the common ENV / LFO pages and the macros come next).
+The approved map, `docs/design/DOCK_SIMPLIFY.md` (job 1 of 3; the common ENV / LFO pages, above, and the macros next).
 All under `DOCK_BAND`: with `-DDOCK_BAND=0` the panel is Melodee's.
 - **Gone from the panel:** SCL's pages (SCALES, SCL, CHORD, MPC) and its hold layer (SCL does nothing until it becomes
   split / layer); SAVE > PROJECT; EDIT's STORE pages (FM6's and the Prophet's: Save as user does it); the sequencer's
