@@ -1,4 +1,11 @@
-# Dock simplification map (proposal, for approval)
+# Dock simplification map
+
+**Approved by Steven, 2026-10-18**, with the proposed answers to the four questions (Favourites removed, MOD matrix kept
+at the end of LFO, metronome/count-in removed until the looper, chord keys removed), and one rule added: common pages
+(ENV, LFO) are a **front door, never a lowest common denominator**. Page 1 is a common control on every engine that
+nudges the engine's own envelopes / LFOs relative to the sound (the middle = as made); the engine's own pages follow
+it unchanged; a control that makes no sense on an engine is greyed out. The visual walkthrough of every button is the
+"Dock Button Tour" page.
 
 Every screen, page, sheet, menu entry and layer the firmware can reach, with what happens to it. The test is Dock's
 two jobs: **dialling in the sound**, and **shaping it live** while an external sequencer plays. Anything that serves
@@ -15,8 +22,8 @@ neither is Melodee's groovebox heritage and goes (removed from the panel; the co
 | EDIT | VOICE (mode, glide, glide mode, priority) | **Keep** | glide and priority matter for Bass and Lead |
 | EDIT | STORE (FM6's store to user) | **Remove** | Save as user does it |
 | EDIT | SCALE (per-engine tuning) | **Remove** | the sequencer sends the notes |
-| **ENV** | ENV, ENV DEST | **Keep** | made to work on every engine (macros job) |
-| **LFO** | LFO, LFO 2, LFO DEST | **Keep** | made consistent (macros job); later hold LFO + knob = momentary tweak |
+| **ENV** | ENV, ENV DEST, and each engine's own envelope pages | **Keep**, with a common ADSR page first (relative) | front door on every engine; nothing lost |
+| **LFO** | LFO, LFO 2, LFO DEST, and each engine's own LFO pages | **Keep**, with a common LFO page first | front door on every engine; later hold LFO + knob = momentary tweak |
 | LFO | MOD (modulation matrix) | **Keep, last** | deep; useful for dialling in, rarely needed |
 | **FX** | SHARED (the Line-up's room) + each member's SEND 1–3 | **Keep, first** | the room is the Line-up's sound; tap FX should land here |
 | FX | FX 1–3 (each member's own insert effects) | **Keep, after the room** | drive or chorus on one member |
