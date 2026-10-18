@@ -5,6 +5,36 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
 
 ## Unreleased
 
+### Panel (the simplification)
+The approved map, `docs/design/DOCK_SIMPLIFY.md` (job 1 of 3; the common ENV / LFO pages and the macros come next).
+All under `DOCK_BAND`: with `-DDOCK_BAND=0` the panel is Melodee's.
+- **Gone from the panel:** SCL's pages (SCALES, SCL, CHORD, MPC) and its hold layer (SCL does nothing until it becomes
+  split / layer); SAVE > PROJECT; EDIT's STORE pages (FM6's and the Prophet's: Save as user does it); the sequencer's
+  pages (PATTERN, PATTERNS, NOTES, MOTION, SONG, DRUM HIT, TEMPO); Sound designer; Favourite and the browser's FAVES
+  (ALL, RECENT and the categories stay); the menu's AUDIO CLICK, CLICK LEVEL, COUNT-IN, NOTE PREVIEW, CHORD ENTRY,
+  AUTOSAVE, HOME SELECT, GLO SELECT (and their effects: no click, count-in or project autosave on Dock); the
+  "HOLD [GLO] QUICK" hint. The code stays, for Melodee's own tests.
+- **SEQ** opens the **CLOCK** page, tempo's new home: KNOB 1 the BPM, 2 the clock source (internal, USB, TRS), 3 the
+  tempo coming in (shown while an outside clock leads, else "--"); the panel shows the tempo large, who sets it and
+  whether it runs.
+- **FX** lands on **SHARED** (the Line-up's room) first, then its sends, then the member's own rack and slots, round
+  again; OCT- on SHARED goes HOME.
+- **HOME's menu** (hold HOME) has a **Band** section: Save line-up, Factory line-up (moved from HOME's sheet; hold SAVE
+  on HOME still saves), **Voice split** (the band's eight voices as B / K / L: 1/6/1, 2/5/1, 1/5/2, 2/4/2, 3/4/1,
+  1/4/3; kept with the Line-up when you save) and **Channels** (the members' MIDI channels: B1 K2 L3 D4, the selected
+  member, or B5..D8 and on). The sheets (OCT+ held) now hold just Init sound, Save as user, Undo last load.
+- **Relabelled:** the hold-GLO layer's mutes, solos and level cards and SYSTEM's channels say B K L D; GLOBAL's voice
+  budget is Dock's voice **SPLIT** (`1/6/1`); the menu's FONT says Space Grotesk.
+- **EDIT, one way round:** EDIT opens the section list; KNOB 2 picks a section, OCT+ opens it, SELECT turns its pages
+  (only its own), OCT- goes back to the list and from there HOME. **PRESETS** browses the member's sounds on every
+  page (no section jumps on EDIT pages). HOME tapped on HOME still turns to the chord wheel.
+- Kept, though the map listed it: FM6's EDIT **SCALE** page is its operators' keyboard level scaling (break point,
+  depths, rate scaling), a sound setting rather than a tuning, so it stays.
+- Tests: `tests/dock_ui_test.c` walks every member, every engine it plays and every page button (each section on
+  EDIT) and checks no removed page is reached (91 pages are); the moved items where the map puts them; the Band rows;
+  EDIT's way round. `dock_save_test.c` saves and reverts through the Band rows; `ui_render` gains the CLOCK, Band and
+  GLOBAL screens (0 lint findings over 269 screens x 9 palettes).
+
 ### Engines
 - **Organ (WHEEL) and PLUCK (PHYS)** are back: Felucca's tonewheel organ and physical models (Leo Kuroshita; PLUCK's
   string and resonators port DaisySP and Rings, MIT), which Melodee had switched off. `DOCK_ORGAN_PLUCK` (dock.h)
@@ -135,7 +165,7 @@ Dock's own changes, newest first. Melodee's history up to the fork (Melodee 1.4.
   edits; JUNO, EP, organ and PLUCK keep theirs in the parameters), level, pan, sends and inserts, the room and the
   voice split. From then on SELECT loads yours, and HOME's header shows a dot after its name ("Yacht • DOCK").
   HOME's sheet (OCT+ held) has **Save line-up** and **Factory line-up** (back to the factory one, after a question;
-  yours is erased). Playing, a save stops the transport first (a flash erase stalls the audio), as a project's does.
+  yours is erased; both since moved to the menu's Band section). Playing, a save stops the transport first (a flash erase stalls the audio), as a project's does.
 - Kept in the flash of Melodee's **project slot D** (`firmware/src/dock_store.c`: its A/B object, power-safe, up to 8
   Line-ups of ~1.6 KB): no flash sector was free in the writable store. Projects A–C work as before; slot D shows as
   LINE-UPS and refuses to load, save or erase as a project. RAM: none of its own (the projects' staging buffer).

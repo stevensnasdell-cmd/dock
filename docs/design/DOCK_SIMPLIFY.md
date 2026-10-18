@@ -1,5 +1,10 @@
 # Dock simplification map
 
+**Done (job 1), 2026-10-18:** the panel matches this map (CHANGELOG "Panel"), with one exception found on the way:
+EDIT's **SCALE** page is FM6's operator keyboard level scaling (break point, depths, rate scaling), a sound setting,
+not a tuning, so it stays. The Prophet's STORE page went with FM6's (Save as user does both). PRESETS browses sounds
+on every page, not only EDIT's.
+
 **Approved by Steven, 2026-10-18**, with the proposed answers to the four questions (Favourites removed, MOD matrix kept
 at the end of LFO, metronome/count-in removed until the looper, chord keys removed), and one rule added: common pages
 (ENV, LFO) are a **front door, never a lowest common denominator**. Page 1 is a common control on every engine that
