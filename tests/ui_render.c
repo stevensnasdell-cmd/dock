@@ -1122,7 +1122,7 @@ static void setup(int s)
     case S_SHEET_STAGE: song.ntrk = 2; song.playing = 0; go_home(); page_sheet_open(); pop.sel = 5; break;
     case S_CONFIRM_TRACK: song.ntrk = 3; song.playing = 0; go_home(); track_select(1); confirm_open(CF_DEL_TRACK, 1); break;
 #if DOCK_SAVE
-    /* Dock: your Line-up: HOME's header with its dot (Kraut: the longest name, 5 letters, with the dot), the Line-up
+    /* Dock: your Line-up: HOME's header with its dot (French: the longest name, 6 letters, with the dot), the Line-up
      * strip as SELECT turned to it, HOME's sheet on Factory line-up ("Yours"), its question */
     case S_DOCK_MINE: case S_DOCK_MINE_STRIP: case S_DOCK_SHEET_FACTORY: case S_DOCK_FACTORY:
         song.playing = 0; go_home();
@@ -1153,7 +1153,7 @@ static void setup(int s)
     case S_DOCK_ENV_DRUM: song.playing = 0; track_select(DOCK_DRUMS); go_title("ENV"); break;
     case S_DOCK_ADSR: song.playing = 0; track_select(DOCK_KEYS); eng(ENGI_JUNO); go_title("ADSR"); break;
     /* the macros on HOME: the Keys' (PART: Tone turning), the band's (BAND, then Bite turning), the drummer's Space
-     * turning, BAND beside your Kraut (the header at its fullest) */
+     * turning, BAND beside your French (the header at its fullest) */
     case S_DOCK_PART: case S_DOCK_BAND: case S_DOCK_BAND_TURN: case S_DOCK_PART_DRUM: case S_DOCK_MINE_BAND:
         song.playing = 0; go_home();
         if (s == S_DOCK_MINE_BAND) {

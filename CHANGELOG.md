@@ -252,6 +252,11 @@ All under `DOCK_BAND`: with `-DDOCK_BAND=0` the panel is Melodee's.
   whole list.
 
 ### Band
+- **Kraut is now French** (French house: Daft Punk's *Homework*, Stardust, Cassius): PROPHET Fat Poly Bass, EP Stage 77
+  through a phaser, JUNO Square Lead, the 909 kit; the room a phaser on the Keys, an eighth-note echo, a small room.
+  Built in the emulator and exported as `firmware/lineups/french.dock` (kraut.dock removed). Stage 77 trimmed +12.5 dB;
+  HOME's header leaves out PART/BAND only when a saved six-letter name would otherwise collide (the knob strip shows
+  the mode); the balance test allows percussive sounds 4 dB (the limiter takes their attack).
 - **Your Line-ups.** Hold SAVE on HOME keeps the whole band as your version of the Line-up playing: each part's
   sound and every edit (all its parameters, its engine's own patch: Prophet, FM6 with its settings, CZ-1, a drum kit's
   edits; JUNO, EP, organ and PLUCK keep theirs in the parameters), level, pan, sends and inserts, the room and the

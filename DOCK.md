@@ -84,16 +84,16 @@ Each Line-up stores all three sounds, voice split, macros **and its own effects 
 |---|---|---|---|---|
 | **Yacht** | Prophet funk bass, light drive | Suitcase Rhodes, stereo trem + chorus | Juno silk lead, delay | Warm plate |
 | **Hot** (50s/60s) | Upright pluck, short and woody | Wurlitzer + trem | Surf twang pluck | Spring + slapback |
-| **Kraut** | Prophet mono, squelchy filter env | Juno string-machine ensemble | Clean Juno square, glide | Tape echo, dry |
+| **French** (French house: Daft Punk *Homework*, Stardust, Cassius) | Round, snappy disco bass | Filtered disco Rhodes chords through a phaser | Clean square hook | Phaser swirl, eighth-note echo, small room |
 | **Goth** (Cure / shoegaze) | High chorused pick bass | Wide Juno string wash, slow attack | Flanged glassy lead, long delay | Huge shimmer |
 | **Mod** (60s mods → The Jam / Style Council) | Round Motown bass | Hammond + rotary + drive | Vox/Farfisa combo organ | Small room, grit |
 
 Power-on default: **Yacht Dock**.
 
-**Built (first pass):** SELECT on HOME steps Yacht → Kraut → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/lineups/` (built in as `firmware/src/dock_factory.h`). Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Each stores its voice split (all 1/6/1 for now) and its macros (the factory ones neutral; yours as saved); still to come per Line-up: groove.
+**Built (first pass):** SELECT on HOME steps Yacht → French → Hot → Mod → Goth and loads each one's four sounds (Bass, Keys, Lead, drum kit), best guesses from today's engines, in `firmware/lineups/` (built in as `firmware/src/dock_factory.h`). Mod's Keys and Lead are WHEEL (MOD HAMMOND, VOX COMBO), Hot's Bass and Lead PLUCK (UPRIGHT, SURF TWANG). Each stores its voice split (all 1/6/1 for now) and its macros (the factory ones neutral; yours as saved); still to come per Line-up: groove.
 
 **Built: the rooms.** Each Line-up sets Melodee's shared effects (three slots, CHAIN or SPLIT) and every part's sends
-when it loads: Yacht warm plate + Lead delay; Hot spring (Felucca's, ported as a new effect) + slapback; Kraut dry with
+when it loads: Yacht warm plate + Lead delay; Hot spring (Felucca's, ported as a new effect) + slapback; French (was Kraut, renamed 2026-10-18) now phaser + eighth echo + small room; formerly dry with
 a dark tape echo; Mod a small short room; Goth a huge drifting reverb, long delay and a chorus send (shimmer-ish: no
 pitch shift yet). Host cost 0.35–1.2 of a PROPHET voice; buffers 4–14 KiB from the audio arena (CHANGELOG). Tempo, which SELECT set on Melodee's HOME, needs a new home.
 
@@ -210,7 +210,7 @@ A preset rhythm box in the spirit of the Ace Tone, Maestro Rhythm King and organ
 |---|---|---|
 | Yacht | Soft, tight, rimshot, closed hats | Laid-back shuffle · Half-time · Light funk |
 | Hot | Brushes, woody, small room | Twist · Surf · Rockabilly · Slow ballad (brushes) |
-| Kraut | Dry, clipped, machine | Motorik · Pulse · Minimal |
+| French | 909, tight, sidechain pump feel | Four-on-the-floor house · Filtered disco · Shuffle house |
 | Goth | Floor toms, gated snare, drum machine | Cure-style tom groove · Slow gated · Driving 8ths |
 | Mod | Bright snare, tambourine | Motown four-on-the-floor · Northern Soul stomp · Shuffle |
 

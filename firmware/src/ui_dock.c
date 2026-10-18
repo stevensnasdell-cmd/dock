@@ -100,10 +100,14 @@ static void dk_head(void)
     cv_begin(240, H_HEAD, T_BG);
     cv_disc(12, H_HEAD / 2, 8, T_TEXT, !ext);           /* the clock and the tempo at the left */
     tag = cv_text_on(22, ty_y(H_HEAD / 2, TY_MB), TY_MB, b, T_TEXT, T_BG) + 6;
-    /* what the knobs move: PART (the selected member, MID) or BAND (the whole band, TEXT) */
-    tag = cv_text_on(tag, ty_y(H_HEAD / 2, TY_LB), TY_LB, dock_macro_band ? "BAND" : "PART", dock_macro_band ? T_TEXT : T_MID,
-                     T_BG);
     x = 232 - text_w(TY_WM, "DOCK");                    /* the Line-up's name and DOCK at the right: "Yacht DOCK" */
+    {   /* what the knobs move: PART (the selected member, MID) or BAND (the whole band, TEXT); left out only when the
+         * name could not fit beside it even a size down (the knob strip shows the mode too: one bar, or three rows) */
+        const char *tg = dock_macro_band ? "BAND" : "PART", *nm = DOCK_LINEUPS[dock_lineup].name;
+        int32_t need = text_w(TY_LB, nm) + (mine ? DK_MINE_D + 5 : 0) + 16;
+        if (tag + text_w(TY_LB, tg) + need <= x)
+            tag = cv_text_on(tag, ty_y(H_HEAD / 2, TY_LB), TY_LB, tg, dock_macro_band ? T_TEXT : T_MID, T_BG);
+    }
     cv_text_on(x, ty_y(H_HEAD / 2, TY_WM), TY_WM, "DOCK", T_TEXT, T_BG);
     {
         const char *nm = DOCK_LINEUPS[dock_lineup].name;

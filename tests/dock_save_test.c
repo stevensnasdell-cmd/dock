@@ -229,13 +229,13 @@ int main(int argc, char **argv)
     shot("build/host/dock_save_home.ppm");
 
     dock_lineup_turn(1); run_ms(100);
-    scheck("SELECT on: Kraut, factory (no mark)", dock_lineup == 1 && !((dock_mine >> 1) & 1u));
+    scheck("SELECT on: French, factory (no mark)", dock_lineup == 1 && !((dock_mine >> 1) & 1u));
     dock_lineup_turn(-1); run_ms(100);
     dock_lineup_capture(&now, 0);
     scheck("SELECT back: yours, every parameter, patch, send, insert, room, voice split", same(&now, &mine) &&
            ((dock_mine >> 0) & 1u) && dock_share[DOCK_BASS] == 2 && trk[DOCK_KEYS].eng_req == ENGI_FM6);
     if (!same(&now, &mine)) diff("load", &now, &mine);
-    dock_lineup_turn(1); run_ms(200);                   /* (from Kraut: the record put in place, or SELECT's load) */
+    dock_lineup_turn(1); run_ms(200);                   /* (from French: the record put in place, or SELECT's load) */
     dd = fork_diff(put_mine, &peak);
     printf("      renders: %ld samples differ, peak %.3f\n", dd, peak);
     scheck("  it renders the same as the record put in place directly", dd == 0 && peak > 0.001f);
